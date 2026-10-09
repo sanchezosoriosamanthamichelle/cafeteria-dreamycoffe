@@ -15,8 +15,8 @@ if not mongo_uri:
     mongo_uri = "mongodb://127.0.0.1:27017/"
     
 cliente = MongoClient(mongo_uri, serverSelectionTimeoutMS=10000)
-base_datos = cliente["libreria_booknest"]
-alumnos = base_datos["catalogo_libros"]
+base_datos = cliente["dreamy_coffe"]
+alumnos = base_datos["productos"]
 
 def leer_formulario(datos=None):
     if datos is None:

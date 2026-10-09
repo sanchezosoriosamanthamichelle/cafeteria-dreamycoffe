@@ -24,7 +24,7 @@ def pedir(metodo, ruta, datos=None):
 
 
 producto = pedir("POST", "/api/productos", {
-    "nombre": "Prueba API", "categoria": "Cuidado facial",
+    "nombre": "café de prueba", "categoria": "Bebidas",
     "estado": "Disponible"
 })
 
