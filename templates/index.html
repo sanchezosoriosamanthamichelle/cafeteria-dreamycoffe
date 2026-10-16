@@ -1,116 +1,156 @@
+
 {% extends 'base.html' %}
 {% block contenido %}
 
-<section id="registro" class="card shadow-sm mb-4">
-    <div class="card-body p-4">
-        <h2 class="h4 mb-3">Agregar producto</h2>
+<!-- PORTADA PRINCIPAL -->
+<section class="hero-dreamy">
+    <div class="hero-copy">
+        <span class="eyebrow">✿ TU RINCÓN FAVORITO ✿</span>
 
-        <form method="post" action="{{ url_for('agregar') }}"
-              class="row g-3">
+        <h1>Un sorbito de<br>felicidad</h1>
 
-            
-<div class="col-md-6">
-    <label for="nombre" class="form-label">nombre del producto</label>
-    <input id="nombre" name="nombre" class="form-control"
-           required maxlength="80" placeholder="Ejemplo: expresso">
-</div>
+        <p>
+            Café, dulces y pequeños momentos
+            que hacen especial tu día.
+        </p>
 
-<div class="col-md-3">
-    <label for="categoria" class="form-label">Categoría</label>
-    <input id="categoria" name="categoria" class="form-control"
-           required maxlength="20" placeholder="Ejemplo: café">
-</div>
+        <a href="#categorias" class="btn btn-dreamy">
+            Descubrir el menú</a>
 
-<div class="col-md-3">
-    <label for="estado" class="form-label">Estado</label>
-    <select id="estado" name="estado" class="form-select" required>
-        <option value="">Selecciona</option>
-        <option value="Disponible">Disponible</option>
-        <option value="Agotado">Agotado</option>
-    </select>
-</div>
-                
+    </div>
 
-            <div class="col-12 d-flex gap-2 flex-wrap">
-                <button type="submit" class="btn btn-success">Guardar producto</button>
+    <div class="hero-photo" role="img"
+         aria-label="Taza de café en un ambiente acogedor">
+    </div>
+</section>
 
-                <button type="reset" class="btn btn-outline-secondary">
-                    Limpiar formulario
-                </button>
+
+<!-- CATEGORÍAS -->
+<section id="categorias" class="home-section">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">HECHO CON AMOR</span>
+            <h2>Nuestro pequeño universo</h2>
+        </div>
+        <span class="heading-flower" aria-hidden="true">❀</span>
+    </div>
+
+    <div class="category-grid">
+        <a class="category-link" href="#cafe">
+            <span aria-hidden="true">☕</span>
+            <span>Cafes</span>
+        </a>
+
+        <a class="category-link" href="#tes">
+            <span aria-hidden="true">🍵</span>
+            <span>Tés y matcha</span>
+        </a>
+
+        <a class="category-link" href="#postres">
+            <span aria-hidden="true">🍰</span>
+            <span>Postrecitos</span>
+        </a>
+    </div>
+</section>
+
+
+<!-- BEBIDA DESTACADA -->
+<section class="featured-drink">
+    <div class="featured-photo" role="img"
+         aria-label="Bebida de café preparada con cuidado">
+    </div>
+
+    <div class="featured-copy">
+        <span class="eyebrow">UN MOMENTO PARA TI</span>
+        <h2>Pequeños detalles,<br>grandes sonrisas</h2>
+
+        <p>
+            Encuentra tu bebida favorita y convierte
+            cualquier día en un momento especial.
+        </p>
+
+    </div>
+</section>
+
+
+<!-- CATÁLOGO DE PRODUCTOS -->
+<section id="lista" class="home-section catalog-section">
+
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">NUESTRO MENÚ</span>
+            <h2>Delicias de Dreamy</h2>
+            <p class="section-description">
+                Encuentra tu próximo antojo favorito.
+            </p>
+        </div>
+
+        <span class="product-count">
+            {{ alumnos|length }} productos
+        </span>
+    </div>
+
+    {% if alumnos %}
+    <div class="product-grid">
+
+        {% for alumno in alumnos %}
+        <article class="product-card">
+
+            <div class="product-card-art">
+                <img
+                    class="producto-imagen"
+                    src="{{ url_for('static', filename='img/' ~ alumno.get('imagen', 'producto-default.jpg')) }}"
+                    alt="{{ alumno.nombre }}"
+                    onerror="this.onerror=null; this.src='/static/img/producto-default.jpg';"
+                >
             </div>
 
-        </form>
+            <div class="product-card-body">
+
+                <div class="product-title-price">
+                    <h3>{{ alumno.nombre }}</h3>
+                    <span class="product-price">
+                        ${{ alumno.get('precio', 0) }}
+                    </span>
+                </div>
+
+                <p class="product-description">
+                    {{ alumno.get('descripcion', 'Una delicia de Dreamy Coffee.') }}
+                </p>
+
+                <span class="status-label {% if alumno.get('estado') == 'Disponible' %}status-available{% else %}status-unavailable{% endif %}">
+                    {{ alumno.get('estado', 'Sin asignar') }}
+                </span>
+
+                <form
+                    action="{{ url_for('agregar_carrito', producto_id=alumno['_id']|string) }}"
+                    method="POST"
+                    class="form-carrito"
+                >
+                    <button
+                        type="submit"
+                        class="btn-agregar-carrito"
+                        {% if alumno.get('estado') != 'Disponible' %}disabled{% endif %}
+                    >
+                        Añadir al carrito
+                    </button>
+                </form>
+
+            </div>
+        </article>
+        {% endfor %}
+
     </div>
+
+    {% else %}
+    <div class="empty-catalog">
+        <span aria-hidden="true">☕</span>
+        <h3>Tu menú está esperando sus primeras delicias</h3>
+        <p>Registra tus primeros productos para verlos aquí.</p>
+    </div>
+    {% endif %}
+
 </section>
 
-<section id="lista" class="card shadow-sm">
-    <div class="card-body p-4">
-
-        <h2 class="h4 mb-3">
-            Productos registrados
-            <span class="badge text-bg-primary">{{ alumnos|length }}</span>
-        </h2>
-
-        <div class="table-responsive">
-
-            <table class="table table-striped table-hover align-middle">
-                <caption>menu de dreamy-coffee</caption>
-
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">Nombre</th>
-                        <th scope="col">Categoría</th>
-                        <th scope="col">Estado</th>
-                        <th scope="col">Acciones</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    {% for alumno in alumnos %}
-
-                    <tr>
-                        <td>{{ alumno.nombre }}</td>
-                        <td>{{ alumno.categoria }}</td>
-                        <td>{{ alumno.get('estado', 'Sin asignar') }}</td>
-
-                        <td>
-                            <div class="d-flex gap-2 flex-wrap">
-
-                                <a class="btn btn-outline-primary btn-sm"
-                                   href="{{ url_for('editar', id=alumno._id) }}">
-                                    Editar
-                                </a>
-
-                                <form method="post"
-                                      action="{{ url_for('eliminar', id=alumno._id) }}"
-                                      onsubmit="return confirm('¿Eliminar este producto?');">
-
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">
-                                        Eliminar
-                                    </button>
-
-                                </form>
-
-                            </div>
-                        </td>
-                    </tr>
-
-                    {% else %}
-
-                    <tr>
-                        <td colspan="4" class="text-center text-secondary py-4">
-                            Todavía no hay productos. Agrega el primero.
-                        </td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-            </table>
-
-        </div>
-    </div>
-</section>
 
 {% endblock %}

@@ -1,109 +1,104 @@
+
 <!doctype html>
 <html lang="es">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cafetería Dreamy Coffe</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+
+    <title>Dreamy Coffee | Café &amp; Sweets</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='estilos.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 </head>
 
 <body>
 
-    <nav class="navbar navbar-expand-lg bg-dark"
-         data-bs-theme="dark"
-         aria-label="Menú principal">
+    <div class="dreamy-layout">
 
-        <div class="container">
-
-            <a class="navbar-brand"
-               href="{{ url_for('inicio') }}">
-                Dreamy Coffe
+        <!-- BARRA LATERAL -->
+        <aside class="sidebar">
+            <a class="brand-logo" href="{{ url_for('inicio') }}">
+                <div class="brand-symbol">☾</div>
+                <span class="brand-name">dreamy-coffee</span>
             </a>
 
-            <button class="navbar-toggler"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#menuPrincipal"
-                    aria-controls="menuPrincipal"
-                    aria-expanded="false"
-                    aria-label="Abrir o cerrar menú">
+            <!-- Buscador visual; conectaremos su funcionamiento después -->
+            <form class="sidebar-search"
+                  action="{{ url_for('inicio') }}"
+                  method="get">
+                <span aria-hidden="true">⌕</span>
+                <input type="search"
+                       name="buscar"
+                       placeholder="Buscar..."
+                       aria-label="Buscar productos">
+            </form>
 
-                <span class="navbar-toggler-icon"></span>
+            <!-- Navegación -->
+            <nav class="sidebar-nav" aria-label="Menú principal">
 
-            </button>
+                <a class="sidebar-link "
+                   href="{{ url_for('inicio') }}">
+                    <span class="sidebar-icon">⌂</span>
+                    <span>Inicio</span>
+                </a>
 
-            <div class="collapse navbar-collapse"
-                 id="menuPrincipal">
+            <a class="sidebar-link"
+                href="{{ url_for('menu') }}">
+                <span class="sidebar-icon">☕</span>
+                <span>Menú</span>
+            </a>
 
-                <ul class="navbar-nav ms-auto">
 
-                    <li class="nav-item">
-                        <a class="nav-link"
-                           href="{{ url_for('inicio') }}">
-                            Inicio
-                        </a>
-                    </li>
+<a class="sidebar-link"
+   href="{{ url_for('login') }}">
+    <span class="sidebar-icon">⚙</span>
+    <span>Administración</span>
+</a>
 
-                    <li class="nav-item">
-                        <a class="nav-link"
-                           href="{{ url_for('inicio') }}#registro">
-                            Registrar
-                        </a>
-                    </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link"
-                           href="{{ url_for('inicio') }}#lista">
-                            Catálogo
-                        </a>
-                    </li>
+                <a class="sidebar-link"
+                   href="{{ url_for('ayuda') }}">
+                    <span class="sidebar-icon">♡</span>
+                    <span>Ayuda</span>
+                </a>
 
-                    <li class="nav-item">
-                        <a class="nav-link"
-                           href="{{ url_for('ayuda') }}">
-                            Ayuda
-                        </a>
-                    </li>
+            </nav>
 
-                </ul>
-
+            <div class="sidebar-footer">
+                <p>Good coffee,<br>soft moments</p>
+                <span>♡ ───── ♡</span>
             </div>
-        </div>
-    </nav>
 
-    <main class="container py-4">
+        </aside>
 
-        <header class="mb-4">
+        <!-- CONTENIDO DE CADA PÁGINA -->
+        <main class="main-content">
 
-            <p class="text-uppercase text-secondary small mb-1">
-                Mi proyecto . Cafeteria Dreamy Coffee
-            </p>
+<div class="top-actions">
+    <a href="{{ url_for('ver_carrito') }}"
+       class="cart-button"
+       aria-label="Ver carrito de compras">
+        <span class="cart-icon">🛒</span>
+        <span>Carrito</span>
+        <span class="cart-count">{{ cantidad_carrito }}</span>
+    </a>
+</div>
 
-            <h1 class="h2">
-                Catálogo de productos
-            </h1>
 
-            <p class="text-secondary">
-                Consulta y ordena tus productos favoritos
-            </p>
 
-        </header>
+            {% block contenido %}{% endblock %}
 
-        {% block contenido %}{% endblock %}
+        </main>
 
-    </main>
+    </div>
 
-    <footer class="container py-3 border-top text-secondary small">
-        Laboratorio de Aplicaciones Web . Datos de practica
-    </footer>
-
-    <script src="{{ url_for('static',
-        filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
 </body>
-
 </html>
-```

@@ -1,39 +1,132 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, abort
+from flask import (
+    Flask, render_template, request, redirect,
+    url_for, abort, session, flash
+)
+from functools import wraps
+from werkzeug.security import check_password_hash
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 from bson import ObjectId
 from datetime import datetime
 from flask import jsonify
+import uuid
+from werkzeug.utils import secure_filename
+
 
 app = Flask(__name__)
-
 mongo_uri = os.environ.get("MONGO_URI")
 if not mongo_uri:
     if os.environ.get("RENDER"):
         raise RuntimeError("Configura MONGO_URI en Render.")
     mongo_uri = "mongodb://127.0.0.1:27017/"
-    
+
 cliente = MongoClient(mongo_uri, serverSelectionTimeoutMS=10000)
 base_datos = cliente["dreamy_coffe"]
 alumnos = base_datos["productos"]
 
+
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+
+if not app.secret_key:
+    raise RuntimeError("Configura la variable FLASK_SECRET_KEY.")
+
+
+def administrador_requerido(funcion):
+    @wraps(funcion)
+    def verificar_sesion(*args, **kwargs):
+        if not session.get("administrador"):
+            flash("Inicia sesión para acceder al panel.", "warning")
+            return redirect(url_for("login"))
+        return funcion(*args, **kwargs)
+    return verificar_sesion
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def login():
+    if session.get("administrador"):
+        return redirect(url_for("panel_admin"))
+
+    if request.method == "POST":
+        usuario = request.form.get("usuario", "").strip()
+        contrasena = request.form.get("contrasena", "")
+
+        usuario_correcto = os.environ.get("ADMIN_USERNAME", "")
+        hash_correcto = os.environ.get("ADMIN_PASSWORD_HASH", "")
+
+        if (
+            usuario_correcto
+            and hash_correcto
+            and usuario == usuario_correcto
+            and check_password_hash(hash_correcto, contrasena)
+        ):
+            session["administrador"] = True
+            return redirect(url_for("panel_admin"))
+
+        flash("Usuario o contraseña incorrectos.", "danger")
+
+    return render_template("admin_login.html")
+
+
+@app.route("/admin")
+@administrador_requerido
+def panel_admin():
+    lista = list(alumnos.find().sort("nombre", 1))
+    return render_template("admin.html", alumnos=lista)
+
+
+@app.route("/admin/logout", methods=["POST"])
+@administrador_requerido
+def logout():
+    session.clear()
+    flash("Has cerrado sesión.", "success")
+    return redirect(url_for("login"))
+
+
+
 def leer_formulario(datos=None):
     if datos is None:
         datos = request.form
-    campos = ("nombre", "categoria", "estado")
+
+    campos = ("nombre", "categoria", "estado", "precio", "descripcion")
+
     if any(not isinstance(datos.get(c, ""), str) for c in campos):
         abort(400, description="Los campos deben contener texto.")
+
     nombre = datos.get("nombre", "").strip()
     categoria = datos.get("categoria", "").strip()
     estado = datos.get("estado", "").strip()
-    if not nombre or not categoria or not estado:
-        abort(400, description="Completa nombre, categoría y estado.")
+    descripcion = datos.get("descripcion", "").strip()
+    precio_texto = datos.get("precio", "").strip()
+
+    if not nombre or not categoria or not estado or not precio_texto:
+        abort(400, description="Completa nombre, categoría, precio y estado.")
+
     if len(nombre) > 80 or len(categoria) > 20:
         abort(400, description="Máximo: nombre 80 y categoría 20.")
+
+    if len(descripcion) > 300:
+        abort(400, description="La descripción no puede superar 300 caracteres.")
+
     if estado not in ["Disponible", "Agotado"]:
         abort(400, description="Selecciona un estado válido.")
-    return {"nombre": nombre, "categoria": categoria, "estado": estado}
+
+    try:
+        precio = float(precio_texto)
+    except ValueError:
+        abort(400, description="El precio debe ser un número válido.")
+
+    if precio < 0 or precio > 100000:
+        abort(400, description="El precio debe estar entre 0 y 100000.")
+
+    return {
+    "nombre": nombre,
+    "categoria": categoria,
+    "precio": precio,
+    "descripcion": descripcion,
+    "estado": estado,
+    "imagen": "producto-default.jpg"
+    }
 
 def buscar_alumno(id):
     if not ObjectId.is_valid(id):
@@ -48,22 +141,101 @@ def inicio():
     lista = list(alumnos.find().sort("nombre", 1))
     return render_template("index.html", alumnos=lista)
 
+
+
 @app.route("/agregar", methods=["POST"])
+@administrador_requerido
 def agregar():
     datos = leer_formulario()
-    alumnos.insert_one(datos)
+
+    archivo = request.files.get("imagen")
+
+    if archivo and archivo.filename:
+        nombre_seguro = secure_filename(archivo.filename)
+        extension = os.path.splitext(nombre_seguro)[1].lower()
+
+        extensiones_permitidas = {".jpg", ".jpeg", ".png", ".webp"}
+
+        if not nombre_seguro or extension not in extensiones_permitidas:
+            abort(400, description="Selecciona una imagen JPG, PNG o WEBP.")
+
+        nombre_imagen = f"{uuid.uuid4().hex}{extension}"
+
+        carpeta_imagenes = os.path.join(
+            app.root_path, "static", "img"
+        )
+        os.makedirs(carpeta_imagenes, exist_ok=True)
+
+        ruta_imagen = os.path.join(carpeta_imagenes, nombre_imagen)
+        archivo.save(ruta_imagen)
+
+        datos["imagen"] = nombre_imagen
+
+    resultado = alumnos.insert_one(datos)
+
+    print("ID DEL PRODUCTO GUARDADO:", resultado.inserted_id)
+
     return redirect(url_for("inicio"))
 
+
 @app.route("/editar/<id>", methods=["GET", "POST"])
+@administrador_requerido
 def editar(id):
     alumno = buscar_alumno(id)
+
     if request.method == "POST":
         datos = leer_formulario()
-        alumnos.update_one({"_id": alumno["_id"]}, {"$set": datos})
+
+        # Conservar la imagen actual si no se selecciona otra
+        datos["imagen"] = alumno.get(
+            "imagen", "producto-default.jpg"
+        )
+
+        archivo = request.files.get("imagen")
+
+        if archivo and archivo.filename:
+            nombre_seguro = secure_filename(archivo.filename)
+            extension = os.path.splitext(nombre_seguro)[1].lower()
+
+            extensiones_permitidas = {
+                ".jpg", ".jpeg", ".png", ".webp"
+            }
+
+            if (
+                not nombre_seguro
+                or extension not in extensiones_permitidas
+            ):
+                abort(
+                    400,
+                    description="Selecciona una imagen JPG, PNG o WEBP."
+                )
+
+            nombre_imagen = f"{uuid.uuid4().hex}{extension}"
+
+            carpeta_imagenes = os.path.join(
+                app.root_path, "static", "img"
+            )
+            os.makedirs(carpeta_imagenes, exist_ok=True)
+
+            ruta_imagen = os.path.join(
+                carpeta_imagenes, nombre_imagen
+            )
+            archivo.save(ruta_imagen)
+
+            datos["imagen"] = nombre_imagen
+
+        alumnos.update_one(
+            {"_id": alumno["_id"]},
+            {"$set": datos}
+        )
+
         return redirect(url_for("inicio"))
+
     return render_template("editar.html", alumno=alumno)
 
+
 @app.route("/eliminar/<id>", methods=["POST"])
+@administrador_requerido
 def eliminar(id):
     alumno = buscar_alumno(id)
     alumnos.delete_one({"_id": alumno["_id"]})
@@ -98,16 +270,112 @@ def producto_json (producto):
         "categoria": producto ["categoria"],
         "estado": producto ["estado"]
         }
-    
 def leer_json():
     datos = request.get_json(silent=True)
     if not isinstance (datos, dict):
         abort (400, description="Envía un objeto JSON válido.")
     return leer_formulario(datos)
 
+
+@app.route("/menu")
+def menu():
+    lista = list(alumnos.find().sort("nombre", 1))
+    return render_template("menu.html", alumnos=lista)
+
+
+@app.context_processor
+def datos_carrito():
+    carrito = session.get("carrito", {})
+    cantidad = sum(int(c) for c in carrito.values())
+    return {"cantidad_carrito": cantidad}
+
+
+@app.route("/carrito")
+def ver_carrito():
+    carrito = session.get("carrito", {})
+    productos_carrito = []
+    total = 0
+
+    for producto_id, cantidad in carrito.items():
+        producto = alumnos.find_one({"_id": ObjectId(producto_id)})
+
+        if producto:
+            precio = float(producto.get("precio", 0))
+            subtotal = precio * int(cantidad)
+            productos_carrito.append({
+                "id": producto_id,
+                "nombre": producto.get("nombre", "Producto"),
+                "precio": precio,
+                "cantidad": int(cantidad),
+                "subtotal": subtotal
+            })
+            total += subtotal
+
+    return render_template(
+        "carrito.html",
+        productos=productos_carrito,
+        total=total
+    )
+
+
+@app.route("/carrito/agregar/<producto_id>", methods=["POST"])
+def agregar_carrito(producto_id):
+    if not ObjectId.is_valid(producto_id):
+        abort(404)
+
+    producto = alumnos.find_one({"_id": ObjectId(producto_id)})
+
+    if not producto:
+        abort(404)
+
+    if producto.get("estado") != "Disponible":
+        flash("Este producto no está disponible.")
+        return redirect(request.referrer or url_for("menu"))
+
+    carrito = session.get("carrito", {})
+    cantidad_actual = int(carrito.get(producto_id, 0))
+    carrito[producto_id] = cantidad_actual + 1
+    session["carrito"] = carrito
+
+    flash(f"{producto.get('nombre', 'Producto')} se agregó al carrito.")
+    return redirect(request.referrer or url_for("menu"))
+
+
+@app.route("/carrito/actualizar/<producto_id>", methods=["POST"])
+def actualizar_carrito(producto_id):
+    if not ObjectId.is_valid(producto_id):
+        abort(404)
+
+    try:
+        cantidad = int(request.form.get("cantidad", "1"))
+    except ValueError:
+        abort(400, description="Cantidad no válida.")
+
+    if cantidad < 1 or cantidad > 99:
+        abort(400, description="La cantidad debe estar entre 1 y 99.")
+
+    carrito = session.get("carrito", {})
+
+    if producto_id in carrito:
+        carrito[producto_id] = cantidad
+        session["carrito"] = carrito
+
+    return redirect(url_for("ver_carrito"))
+
+
+@app.route("/carrito/eliminar/<producto_id>", methods=["POST"])
+def eliminar_carrito(producto_id):
+    carrito = session.get("carrito", {})
+    carrito.pop(producto_id, None)
+    session["carrito"] = carrito
+    return redirect(url_for("ver_carrito"))
+
+
 @app.route("/api/productos", methods=["GET", "POST"])
 def api_productos():
     if request.method == "POST":
+        if not session.get("administrador"):
+            abort(401, description="Debes iniciar sesión como administrador.")
         datos = leer_json()
         resultado= alumnos.insert_one(datos)
         producto= buscar_alumno (str(resultado.inserted_id))
@@ -119,10 +387,14 @@ def api_productos():
 def api_producto (id):
     producto = buscar_alumno(id)
     if request.method == "PUT":
+        if not session.get("administrador"):
+            abort(401, description="Debes iniciar sesión como administrador.")
         datos = leer_json()
         alumnos.update_one({"_id": producto ["_id"] }, { "$set": datos})
         return jsonify(producto_json (buscar_alumno(id)))
     if request.method == "DELETE":
+        if not session.get("administrador"):
+            abort(401, description="Debes iniciar sesión como administrador.")
         alumnos.delete_one({"_id": producto ["_id"]})
         return "", 204
     return jsonify (producto_json(producto))

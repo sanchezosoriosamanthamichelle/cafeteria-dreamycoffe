@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+
+<section class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Panel de administración</h1>
+            <p>Gestiona los productos de Dreamy Coffee.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('logout') }}">
+            <button type="submit" class="btn btn-outline-dark">
+                Cerrar sesión
+            </button>
+        </form>
+    </div>
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% for categoria, mensaje in mensajes %}
+            <div class="alert alert-{{ categoria }}">
+                {{ mensaje }}
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="mb-5" id="registro">
+        <h2>Agregar producto</h2>
+
+        <form method="POST"
+        action="{{ url_for('agregar') }}"
+        enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="nombre"
+                    name="nombre"
+                    maxlength="80"
+                    required>
+            </div>
+
+            <div class="mb-3">
+                <label for="categoria" class="form-label">Categoría</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="categoria"
+                    name="categoria"
+                    maxlength="20"
+                    placeholder="Ejemplo: café"
+                    required>
+            </div>
+
+<div class="mb-3">
+    <label for="precio" class="form-label">Precio (MXN)</label>
+    <input
+        type="number"
+        class="form-control"
+        id="precio"
+        name="precio"
+        min="0"
+        max="100000"
+        step="0.01"
+        placeholder="Ejemplo: 50"
+        required>
+</div>
+
+<div class="mb-3">
+    <label for="descripcion" class="form-label">Descripción</label>
+    <textarea
+        class="form-control"
+        id="descripcion"
+        name="descripcion"
+        maxlength="300"
+        rows="2"
+        placeholder="Ejemplo: Espresso con leche espumosa"></textarea>
+</div>
+
+<div class="mb-3">
+    <label for="imagen" class="form-label">
+        Imagen del producto
+    </label>
+    <input
+        type="file"
+        class="form-control"
+        id="imagen"
+        name="imagen"
+        accept=".jpg,.jpeg,.png,.webp"
+    >
+    <small class="form-text text-muted">
+        Formatos permitidos: JPG, PNG y WEBP.
+    </small>
+</div>
+
+
+            <div class="mb-3">
+                <label for="estado" class="form-label">Estado</label>
+                <select
+                    class="form-select"
+                    id="estado"
+                    name="estado"
+                    required>
+                    <option value="Disponible">Disponible</option>
+                    <option value="Agotado">Agotado</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-dark">
+                Guardar producto
+            </button>
+        </form>
+    </div>
+
+    <hr>
+
+    <h2 class="mb-3">Productos registrados</h2>
+
+    {% if alumnos %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+<tbody>
+    {% for alumno in alumnos %}
+        <tr>
+            <td>{{ alumno.nombre }}</td>
+            <td>{{ alumno.categoria }}</td>
+
+            <td>
+                {% if alumno.precio is defined and alumno.precio is not none %}
+                    ${{ "%.2f"|format(alumno.precio) }}
+                {% else %}
+                    Sin precio
+                {% endif %}
+            </td>
+
+            <td>{{ alumno.descripcion or "—" }}</td>
+
+            <td>{{ alumno.estado }}</td>
+
+            <td>
+                <a
+                    href="{{ url_for('editar', id=alumno._id) }}"
+                    class="btn btn-sm btn-outline-dark">
+                    Editar
+                </a>
+
+                <form
+                    method="POST"
+                    action="{{ url_for('eliminar', id=alumno._id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('¿Eliminar este producto?');">
+                    <button
+                        type="submit"
+                        class="btn btn-sm btn-outline-danger">
+                        Eliminar
+                    </button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
+
+            </table>
+        </div>
+    {% else %}
+        <p>Aún no hay productos registrados.</p>
+    {% endif %}
+
+    <a href="{{ url_for('inicio') }}" class="btn btn-outline-secondary mt-3">
+        Volver a la cafetería
+    </a>
+</section>
+
+{% endblock %}

@@ -1,0 +1,36 @@
+
+{% extends "base.html" %}
+
+{% block contenido %}
+<section class="carta-menu">
+    <header class="carta-encabezado">
+        <p class="carta-subtitulo">DREAMY COFFEE</p>
+        <h1>Menú</h1>
+        <p>Cafés y bebidas</p>
+        <div class="linea-menu"></div>
+    </header>
+
+<div class="lista-menu">
+    {% if alumnos %}
+        {% for producto in alumnos %}
+            <article class="producto-menu">
+                <div class="producto-titulo">
+                    <h2>{{ producto.nombre }}</h2>
+                    <span>
+                        {% if producto.precio is defined and producto.precio != none %}
+                            ${{ producto.precio }}
+                        {% else %}
+                            Precio por definir
+                        {% endif %}
+                    </span>
+                </div>
+                <p>{{ producto.descripcion or producto.categoria }}</p>
+            </article>
+        {% endfor %}
+    {% else %}
+        <p>Pronto tendremos bebidas deliciosas en nuestro menú.</p>
+    {% endif %}
+</div>
+
+</section>
+{% endblock %}

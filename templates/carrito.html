@@ -1,0 +1,60 @@
+
+{% extends "base.html" %}
+
+{% block contenido %}
+<section class="carrito-pagina">
+    <h1>Mi carrito 🛒</h1>
+    <p>Revisa tus cafecitos antes de continuar.</p>
+
+    {% if productos %}
+        <div class="carrito-lista">
+            {% for producto in productos %}
+                <article class="carrito-producto">
+                    <div class="carrito-info">
+                        <h3>{{ producto.nombre }}</h3>
+                        <p>Precio: ${{ "%.2f"|format(producto.precio) }}</p>
+                        <p>Subtotal: ${{ "%.2f"|format(producto.subtotal) }}</p>
+                    </div>
+
+                    <form action="{{ url_for('actualizar_carrito', producto_id=producto.id) }}"
+                          method="POST">
+                        <label for="cantidad-{{ producto.id }}">Cantidad:</label>
+                        <input
+                            id="cantidad-{{ producto.id }}"
+                            type="number"
+                            name="cantidad"
+                            min="1"
+                            max="99"
+                            value="{{ producto.cantidad }}"
+                            required
+                        >
+                        <button type="submit">Actualizar</button>
+                    </form>
+
+                    <form action="{{ url_for('eliminar_carrito', producto_id=producto.id) }}"
+                          method="POST">
+                        <button type="submit" class="btn-eliminar">
+                            Eliminar
+                        </button>
+                    </form>
+                </article>
+            {% endfor %}
+        </div>
+
+        <div class="carrito-resumen">
+            <h2>Total: ${{ "%.2f"|format(total) }}</h2>
+            <p>El pago todavía no se procesa en línea.</p>
+        </div>
+    {% else %}
+        <div class="carrito-vacio">
+            <span>☕</span>
+            <h2>Tu carrito está vacío</h2>
+            <p>¡Hay algo delicioso esperándote!</p>
+        </div>
+    {% endif %}
+
+    <a href="{{ url_for('menu') }}" class="carrito-volver">
+        ← Volver al menú
+    </a>
+</section>
+{% endblock %}

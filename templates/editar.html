@@ -1,47 +1,148 @@
-
 {% extends 'base.html' %}
 {% block contenido %}
+
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <section class="card shadow-sm">
             <div class="card-body p-4">
-                <h2 class="h4 mb-3">Editar Producto</h2>
-                <form method="post"
-                      action="{{ url_for('editar', id=alumno._id) }}">
+
+                <h2 class="h4 mb-3">Editar producto</h2>
+
+                <form method="POST"
+                      action="{{ url_for('editar', id=alumno._id) }}"
+                      enctype="multipart/form-data">
+
+                    <!-- NOMBRE -->
                     <div class="mb-3">
-                        <label for="nombre" class="form-label">Producto</label>
-                        <input id="nombre" name="nombre" class="form-control"
-                                value="{{ alumno.nombre }}" required maxlength="80">
+                        <label for="nombre" class="form-label">
+                            Nombre del producto
+                        </label>
+                        <input
+                            type="text"
+                            id="nombre"
+                            name="nombre"
+                            class="form-control"
+                            value="{{ alumno.nombre }}"
+                            maxlength="80"
+                            required>
                     </div>
 
+                    <!-- CATEGORÍA -->
                     <div class="mb-3">
-                        <label for="categoria" class="form-label">Categoría</label>
-                        <input id="categoria" name="categoria" class="form-control"
-                                value="{{ alumno.categoria }}" required maxlength="20">
+                        <label for="categoria" class="form-label">
+                            Categoría
+                        </label>
+                        <input
+                            type="text"
+                            id="categoria"
+                            name="categoria"
+                            class="form-control"
+                            value="{{ alumno.categoria }}"
+                            maxlength="20"
+                            required>
                     </div>
-                    
+
+                    <!-- PRECIO -->
                     <div class="mb-3">
-                        <label for="estado" class="form-label">Estado</label>
-                        <select id="estado" name="estado" class="form-select" required>
-                            <option value="">Selecciona</option>
+                        <label for="precio" class="form-label">
+                            Precio (MXN)
+                        </label>
+                        <input
+                            type="number"
+                            id="precio"
+                            name="precio"
+                            class="form-control"
+                            value="{{ alumno.get('precio', 0) }}"
+                            min="0"
+                            max="100000"
+                            step="0.01"
+                            required>
+                    </div>
+
+                    <!-- DESCRIPCIÓN -->
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">
+                            Descripción
+                        </label>
+                        <textarea
+                            id="descripcion"
+                            name="descripcion"
+                            class="form-control"
+                            maxlength="300"
+                            rows="3">{{ alumno.get('descripcion', '') }}</textarea>
+                    </div>
+
+                    <!-- ESTADO -->
+                    <div class="mb-3">
+                        <label for="estado" class="form-label">
+                            Estado
+                        </label>
+                        <select
+                            id="estado"
+                            name="estado"
+                            class="form-select"
+                            required>
+
                             {% for opcion in ['Disponible', 'Agotado'] %}
                                 <option value="{{ opcion }}"
-                                        {% if alumno.get('estado') == opcion %}selected{% endif %}>
+                                    {% if alumno.get('estado') == opcion %}selected{% endif %}>
                                     {{ opcion }}
                                 </option>
                             {% endfor %}
+
                         </select>
                     </div>
+
+                    <!-- IMAGEN ACTUAL -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Imagen actual
+                        </label>
+
+                        <div>
+                            <img
+                                src="{{ url_for('static', filename='img/' ~ alumno.get('imagen', 'producto-default.jpg')) }}"
+                                alt="Imagen de {{ alumno.nombre }}"
+                                onerror="this.onerror=null; this.src='/static/img/producto-default.jpg';"
+                                style="width: 180px; height: 150px; object-fit: cover; border-radius: 12px;">
+                        </div>
+                    </div>
+
+                    <!-- CAMBIAR IMAGEN -->
+                    <div class="mb-4">
+                        <label for="imagen" class="form-label">
+                            Cambiar imagen (opcional)
+                        </label>
+
+                        <input
+                            type="file"
+                            id="imagen"
+                            name="imagen"
+                            class="form-control"
+                            accept=".jpg,.jpeg,.png,.webp">
+
+                        <small class="form-text text-muted">
+                            JPG, JPEG, PNG o WEBP. Si no seleccionas otra,
+                            se conservará la imagen actual.
+                        </small>
+                    </div>
+
+                    <!-- BOTONES -->
                     <div class="d-flex gap-2 flex-wrap">
                         <button type="submit" class="btn btn-primary">
                             Guardar cambios
                         </button>
+
                         <a class="btn btn-outline-secondary"
-                           href="{{ url_for('inicio') }}#lista">Cancelar</a>
+                           href="{{ url_for('inicio') }}#lista">
+                            Cancelar
+                        </a>
                     </div>
+
                 </form>
             </div>
         </section>
     </div>
 </div>
+
 {% endblock %}
