@@ -73,9 +73,17 @@
 </section>
 
 
+
 <!-- CATÁLOGO DE PRODUCTOS -->
 <section id="lista" class="home-section catalog-section">
 
+    {% if buscar %}
+    <h2>Resultados para "{{ buscar }}"</h2>
+    
+    {% if not alumnos %}
+    <p>No encontramos productos con ese nombre.</p>
+        {% endif %}
+    {% endif %}
     <div class="section-heading">
         <div>
             <span class="eyebrow">NUESTRO MENÚ</span>

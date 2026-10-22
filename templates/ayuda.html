@@ -1,22 +1,34 @@
 {% extends 'base.html' %}
+
 {% block contenido %}
 <section class="card shadow-sm">
     <div class="card-body p-4">
-        <h2 class="h4">Ayuda de la cafeteria Dreamy Coffe</h2>
-        <p class="text-secondary">Fecha del equipo: {{ fecha }}</p>
+
+        <h2 class="h4">Ayuda de Dreamy Coffee ☕</h2>
+
+        <p class="text-secondary">
+            Guía para utilizar la cafetería.
+        </p>
+
         <div class="alert alert-info" role="note">
-            Utiliza datos ficticios durante la práctica.
+            Utiliza datos ficticios durante las pruebas del proyecto.
         </div>
+
         <ol class="mb-4">
-            <li>En Agregar producto, escribe el título, la categoría y selecciona el estado.</li>
-            <li>Presiona Guardar producto y consulta el menu.</li>
-            <li>Usa Editar para corregir los datos de un producto.</li>
-            <li>Usa Eliminar solo con tus productos de prueba.</li>
-            <li>En pantalla pequeña, abre el menú con su botón.</li>
+            <li>Explora el menú para conocer los productos disponibles.</li>
+            <li>Agrega al carrito los cafecitos y postres que quieras pedir.</li>
+            <li>Entra al carrito para revisar los productos, las cantidades y el total.</li>
+            <li>Completa tus datos para registrar tu pedido.</li>
+            <li>Selecciona la opción de recoger tu pedido en Dreamy Coffee.</li>
+            <li>El pago se realiza al recoger; el sitio no procesa cobros en línea.</li>
         </ol>
+
         <a class="btn btn-primary" href="{{ url_for('inicio') }}">
-            Volver al registro
+            Volver al inicio
         </a>
+            
+        
+
     </div>
 </section>
 {% endblock %}

@@ -7,7 +7,7 @@
     --cafe-medio: #68483b;
     --rosa: #e9aaa9;
     --rosa-claro: #f4d5d0;
-    --crema: #fff0e5;
+    --crema: #f8eae4;
     --crema-oscuro: #f5e3d6;
     --texto: #49352d;
     --texto-suave: #92766a;
@@ -47,11 +47,7 @@ body {
     min-height: 100vh;
     padding: 30px 22px 24px;
     overflow-y: auto;
-    background: linear-gradient(
-        180deg,
-        var(--cafe-oscuro),
-        #56392e
-    );
+    background-color: #3A0E1E;
     color: var(--rosa-claro);
 }
 
@@ -103,7 +99,7 @@ body {
     padding: 12px 15px;
     border: 1px solid rgba(255, 240, 229, 0.15);
     border-radius: 30px;
-    background: #795c4e;
+    background: #b56672;
     color: var(--crema);
 }
 
@@ -152,7 +148,7 @@ body {
 
 .sidebar-link:hover,
 .sidebar-link.active {
-    background: #956f66;
+    background: #A07A80;
     color: #fff3eb;
 }
 
@@ -383,7 +379,7 @@ h4 {
             rgba(245, 223, 213, 0.08),
             rgba(73, 48, 39, 0.02)
         ),
-        url("/static/img/banner.jpg");
+        url("/static/img/banner1.jpg");
     background-position: center;
     background-size: cover;
 }
@@ -392,15 +388,15 @@ h4 {
     padding: 11px 22px;
     border: 1px solid #654638;
     border-radius: 30px;
-    background: #654638;
-    color: #fff7f0;
+    background: #8E2D3B;
+    color: #F5E9ED;
     text-decoration: none;
     transition: background 0.2s ease;
 }
 
 .btn-dreamy:hover {
     border-color: #895f55;
-    background: #895f55;
+    background: #efa1a1;
     color: white;
 }
 
@@ -487,16 +483,16 @@ h4 {
     grid-template-columns: 1fr 1fr;
     width: 90%;
     margin: 42px auto;
-    min-height: 260px;
+    min-height: 320px;
     overflow: hidden;
     border-radius: 22px;
     background: #ead2c2;
 }
 
 .featured-photo {
-    min-height: 260px;
+    min-height: 320px;
     background-color: #c5a28b;
-    background-image: url("/static/img/bebida-destacada.jpg");
+    background-image: url("/static/img/bebida.jpg");
     background-position: center;
     background-size: cover;
 }
@@ -533,7 +529,7 @@ h4 {
 .product-card {
     min-width: 0;
     overflow: hidden;
-    background: #fffaf6;
+    background: #F2ECD0;
     border: 1px solid #ead8cf;
     border-radius: 16px;
     box-shadow: 0 4px 12px rgba(73, 48, 39, 0.10);
@@ -1103,4 +1099,49 @@ h4 {
 .icono-carrito:hover {
     background: #68483b;
     transform: scale(1.08);
+}
+
+.formulario-pedido {
+    display: grid;
+    gap: 12px;
+    max-width: 600px;
+    margin-top: 24px;
+}
+
+.formulario-pedido label {
+    color: var(--cafe-oscuro);
+    font-weight: 600;
+}
+
+.formulario-pedido input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid var(--crema-oscuro);
+    border-radius: 10px;
+    background: var(--blanco);
+    color: var(--texto);
+}
+
+.formulario-pedido input:focus {
+    outline: 2px solid var(--rosa);
+    outline-offset: 2px;
+}
+
+/* COLORES DE LA PAGINA DE AYUDA */
+.card .alert-info {
+    background-color: var(--rosa-claro);
+    color: var(--texto);
+    border-color: var(--rosa);
+}
+
+.card .btn-primary {
+    background-color: #8E2D3B;
+    border-color: #8E2D3B;
+    color: #fffaf6;
+}
+
+.card .btn-primary:hover {
+    background-color: #70232F;
+    border-color: #70232F;
 }

@@ -1,0 +1,128 @@
+
+{% extends "base.html" %}
+
+{% block contenido %}
+<section class="carrito-pagina">
+
+    {% if confirmado %}
+
+        <!-- PEDIDO CONFIRMADO -->
+        <div class="carrito-vacio">
+            <span>☕</span>
+
+            <h1>¡Gracias por tu pedido!</h1>
+            <p>Tu pedido se registró correctamente.</p>
+
+            <div class="carrito-resumen">
+                <h2>Número de pedido</h2>
+                <p>{{ pedido.numero_pedido }}</p>
+
+                <h2>Resumen de tu compra</h2>
+
+                {% for producto in pedido.productos %}
+                    <p>
+                        {{ producto.nombre }}
+                        × {{ producto.cantidad }}
+                        — ${{ "%.2f"|format(producto.subtotal) }}
+                    </p>
+                {% endfor %}
+
+                <h2>
+                    Total: ${{ "%.2f"|format(pedido.total) }}
+                </h2>
+
+                <h3>Entrega</h3>
+                <p>Recoger en Dreamy Coffee.</p>
+
+                <h3>Forma de pago</h3>
+                <p>Pago al recoger.</p>
+            </div>
+
+            <a href="{{ url_for('inicio') }}" class="carrito-volver">
+                Volver al inicio
+            </a>
+        </div>
+
+    {% else %}
+
+        
+<h1>Finalizar pedido ☕</h1>
+<p>¡Ya casi están listos tus cafecitos!</p>
+
+<div class="carrito-resumen">
+    <h2>Resumen de tu pedido</h2>
+
+    {% for producto in productos %}
+        <p>
+            {{ producto.nombre }} × {{ producto.cantidad }}
+            — ${{ "%.2f"|format(producto.subtotal) }}
+        </p>
+    {% endfor %}
+
+    <h2>Total: ${{ "%.2f"|format(total) }}</h2>
+</div>
+
+<form method="POST" class="formulario-pedido">
+
+    <label for="nombre">Tu nombre</label>
+    <input
+        id="nombre"
+        name="nombre"
+        type="text"
+        maxlength="100"
+        autocomplete="name"
+        required
+    >
+
+    <label for="telefono">Teléfono de contacto</label>
+    <input
+        id="telefono"
+        name="telefono"
+        type="tel"
+        maxlength="20"
+        autocomplete="tel"
+        required
+    >
+
+    <div class="carrito-resumen">
+        <h3>Entrega</h3>
+        <p>Recoger en Dreamy Coffee.</p>
+
+        <h3>Forma de pago</h3>
+
+        <label>
+            <input
+                type="radio"
+                name="metodo_pago"
+                value="recoger"
+                required
+            >
+            Pagar al recoger
+        </label>
+
+        <label>
+            <input
+                type="radio"
+                name="metodo_pago"
+                value="tarjeta"
+                required
+            >
+            Tarjeta
+        </label>
+    </div>
+
+    <button type="submit" class="carrito-volver">
+        Confirmar mi pedido
+    </button>
+
+</form>
+
+<a href="{{ url_for('ver_carrito') }}" class="carrito-volver">
+    ← Volver al carrito
+</a>
+
+
+    {% endif %}
+
+</section>
+{% endblock %}

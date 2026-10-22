@@ -178,9 +178,77 @@
         <p>Aún no hay productos registrados.</p>
     {% endif %}
 
-    <a href="{{ url_for('inicio') }}" class="btn btn-outline-secondary mt-3">
+    
+    <hr class="my-5">
+
+    <h2 class="mb-3">Pedidos recibidos</h2>
+    <p>Consulta las compras y actualiza su estado.</p>
+
+    {% if pedidos %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Productos</th>
+                        <th>Total</th>
+                        <th>Pago</th>
+                        <th>Estado del pedido</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for pedido in pedidos %}
+                        <tr>
+                            <td>{{ pedido.numero_pedido }}</td>
+
+                            <td>
+                                {{ pedido.cliente.nombre }}
+                                <br>
+                                <small>
+                                    {{ pedido.cliente.telefono }}
+                                </small>
+                            </td>
+
+                            <td>
+                                {% for producto in pedido.productos %}
+                                    <div>
+                                        {{ producto.nombre }}
+                                        × {{ producto.cantidad }}
+                                    </div>
+                                {% endfor %}
+                            </td>
+
+                            <td>
+                                ${{ "%.2f"|format(pedido.total) }}
+                            </td>
+
+                            <td>
+                                {{ pedido.metodo_pago }}
+                                <br>
+                                <strong>
+                                    {{ pedido.estado_pago or "Pendiente" }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ pedido.estado_pedido or pedido.estado or "Pendiente" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Aún no hay pedidos registrados.</p>
+    {% endif %}
+
+    <a href="{{ url_for('inicio') }}"
+       class="btn btn-outline-secondary mt-3">
         Volver a la cafetería
     </a>
 </section>
 
 {% endblock %}
+

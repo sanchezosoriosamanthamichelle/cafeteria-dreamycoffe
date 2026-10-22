@@ -24,8 +24,8 @@ if not mongo_uri:
 cliente = MongoClient(mongo_uri, serverSelectionTimeoutMS=10000)
 base_datos = cliente["dreamy_coffe"]
 alumnos = base_datos["productos"]
-
-
+pedidos = base_datos["pedidos"]
+    
 app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 
 if not app.secret_key:
@@ -53,6 +53,7 @@ def login():
 
         usuario_correcto = os.environ.get("ADMIN_USERNAME", "")
         hash_correcto = os.environ.get("ADMIN_PASSWORD_HASH", "")
+        
 
         if (
             usuario_correcto
@@ -68,11 +69,20 @@ def login():
     return render_template("admin_login.html")
 
 
+
 @app.route("/admin")
 @administrador_requerido
 def panel_admin():
     lista = list(alumnos.find().sort("nombre", 1))
-    return render_template("admin.html", alumnos=lista)
+    lista_pedidos = list(
+        pedidos.find().sort("fecha", -1)
+    )
+
+    return render_template(
+        "admin.html",
+        alumnos=lista,
+        pedidos=lista_pedidos
+    )
 
 
 @app.route("/admin/logout", methods=["POST"])
@@ -136,10 +146,27 @@ def buscar_alumno(id):
         abort(404, description="Este producto ya no existe.")
     return alumno
 
+
 @app.route("/")
 def inicio():
-    lista = list(alumnos.find().sort("nombre", 1))
-    return render_template("index.html", alumnos=lista)
+    termino = request.args.get("buscar", "").strip()
+
+    filtro = {"estado": "Disponible"}
+
+    if termino:
+        filtro["$or"] = [
+            {"nombre": {"$regex": termino, "$options": "i"}},
+            {"categoria": {"$regex": termino, "$options": "i"}},
+            {"descripcion": {"$regex": termino, "$options": "i"}}
+        ]
+
+    lista = list(alumnos.find(filtro).sort("nombre", 1))
+
+    return render_template(
+        "index.html",
+        alumnos=lista,
+        buscar=termino
+    )
 
 
 
@@ -370,6 +397,124 @@ def eliminar_carrito(producto_id):
     session["carrito"] = carrito
     return redirect(url_for("ver_carrito"))
 
+
+
+@app.route("/finalizar-compra", methods=["GET", "POST"])
+def finalizar_compra():
+    carrito = session.get("carrito", {})
+    productos_carrito = []
+    total = 0
+
+    for producto_id, cantidad in carrito.items():
+        if not ObjectId.is_valid(producto_id):
+            continue
+
+        producto = alumnos.find_one({
+            "_id": ObjectId(producto_id)
+        })
+
+        if not producto or producto.get("estado") != "Disponible":
+            continue
+
+        cantidad = int(cantidad)
+
+        if cantidad < 1 or cantidad > 99:
+            abort(400, description="Cantidad no válida.")
+
+        precio = float(producto.get("precio", 0))
+        subtotal = round(precio * cantidad, 2)
+
+        productos_carrito.append({
+            "producto_id": producto_id,
+            "nombre": producto.get("nombre", "Producto"),
+            "precio": precio,
+            "cantidad": cantidad,
+            "subtotal": subtotal
+        })
+
+        total += subtotal
+
+    total = round(total, 2)
+
+    if not productos_carrito:
+        flash("Tu carrito está vacío o no tiene productos disponibles.")
+        return redirect(url_for("ver_carrito"))
+
+    if request.method == "POST":
+        nombre = request.form.get("nombre", "").strip()
+        telefono = request.form.get("telefono", "").strip()
+        metodo_pago = request.form.get("metodo_pago", "").strip()
+
+        if not nombre or not telefono:
+            flash("Completa tu nombre y teléfono.")
+        elif len(nombre) > 100 or len(telefono) > 20:
+            abort(400, description="Revisa los datos ingresados.")
+        elif metodo_pago not in ("recoger", "tarjeta"):
+            abort(400, description="Selecciona un método de pago.")
+        else:
+            # Resultado de prueba generado en el servidor.
+            # No se solicitan datos bancarios ni se cobra dinero.
+            if metodo_pago == "tarjeta":
+                import secrets
+
+                pago_aprobado = secrets.randbelow(10) < 8
+
+                if not pago_aprobado:
+                    flash(
+                        "No fue posible completar el pago. "
+                        "Inténtalo nuevamente.",
+                        "warning"
+                    )
+                    return render_template(
+                        "finalizar_compra.html",
+                        productos=productos_carrito,
+                        total=total,
+                        confirmado=False
+                    )
+
+            numero_pedido = uuid.uuid4().hex[:12].upper()
+
+            nuevo_pedido = {
+                "numero_pedido": numero_pedido,
+                "cliente": {
+                    "nombre": nombre,
+                    "telefono": telefono
+                },
+                "productos": productos_carrito,
+                "total": total,
+                "entrega": "Recoger en cafetería",
+                "metodo_pago": (
+                    "Pago al recoger"
+                    if metodo_pago == "recoger"
+                    else "Tarjeta"
+                ),
+                "estado_pago": (
+                    "Pendiente"
+                    if metodo_pago == "recoger"
+                    else "Pagado"
+                ),
+                "estado_pedido": "Recibido",
+                "estado": "Pendiente",
+                "fecha": datetime.now()
+            }
+
+            pedidos.insert_one(nuevo_pedido)
+            session["carrito"] = {}
+
+            return render_template(
+                "finalizar_compra.html",
+                confirmado=True,
+                pedido=nuevo_pedido,
+                productos=[],
+                total=total
+            )
+
+    return render_template(
+        "finalizar_compra.html",
+        productos=productos_carrito,
+        total=total,
+        confirmado=False
+    )
 
 @app.route("/api/productos", methods=["GET", "POST"])
 def api_productos():

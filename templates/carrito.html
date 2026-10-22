@@ -42,9 +42,14 @@
         </div>
 
         <div class="carrito-resumen">
-            <h2>Total: ${{ "%.2f"|format(total) }}</h2>
-            <p>El pago todavía no se procesa en línea.</p>
-        </div>
+    <h2>Total: ${{ "%.2f"|format(total) }}</h2>
+    <p>Pago simulado al recoger en la cafetería.</p>
+
+    <a href="{{ url_for('finalizar_compra') }}"
+       class="carrito-volver">
+        Continuar con el pedido →
+    </a>
+</div>
     {% else %}
         <div class="carrito-vacio">
             <span>☕</span>
@@ -53,8 +58,8 @@
         </div>
     {% endif %}
 
-    <a href="{{ url_for('menu') }}" class="carrito-volver">
-        ← Volver al menú
+    <a href="{{ url_for('inicio') }}" class="carrito-volver">
+        ← Volver al inicio
     </a>
 </section>
 {% endblock %}
