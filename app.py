@@ -85,6 +85,42 @@ def panel_admin():
     )
 
 
+@app.route("/admin/pedido/<numero_pedido>/marcar-pagado", methods=["POST"])
+@administrador_requerido
+def marcar_pedido_pagado(numero_pedido):
+    resultado = pedidos.update_one(
+        {
+            "numero_pedido": numero_pedido,
+            "estado_pago": "Pendiente"
+        },
+        {
+            "$set": {
+                "estado_pago": "Pagado"
+            }
+        }
+    )
+
+    if resultado.modified_count == 1:
+        flash(
+            f"El pedido {numero_pedido} se marcó como pagado.",
+            "success"
+        )
+    else:
+        pedido = pedidos.find_one({
+            "numero_pedido": numero_pedido
+        })
+
+        if pedido is None:
+            flash("No se encontró el pedido.", "danger")
+        else:
+            flash(
+                "El pedido no está pendiente de pago o ya fue pagado.",
+                "warning"
+            )
+
+    return redirect(url_for("panel_admin"))
+
+
 @app.route("/admin/logout", methods=["POST"])
 @administrador_requerido
 def logout():
@@ -151,7 +187,7 @@ def buscar_alumno(id):
 def inicio():
     termino = request.args.get("buscar", "").strip()
 
-    filtro = {"estado": "Disponible"}
+    filtro = {}
 
     if termino:
         filtro["$or"] = [
@@ -405,6 +441,7 @@ def finalizar_compra():
     productos_carrito = []
     total = 0
 
+    # Obtener los productos disponibles del carrito
     for producto_id, cantidad in carrito.items():
         if not ObjectId.is_valid(producto_id):
             continue
@@ -416,7 +453,10 @@ def finalizar_compra():
         if not producto or producto.get("estado") != "Disponible":
             continue
 
-        cantidad = int(cantidad)
+        try:
+            cantidad = int(cantidad)
+        except (TypeError, ValueError):
+            abort(400, description="Cantidad no válida.")
 
         if cantidad < 1 or cantidad > 99:
             abort(400, description="Cantidad no válida.")
@@ -444,27 +484,66 @@ def finalizar_compra():
         nombre = request.form.get("nombre", "").strip()
         telefono = request.form.get("telefono", "").strip()
         metodo_pago = request.form.get("metodo_pago", "").strip()
+        entrega = request.form.get("entrega", "").strip()
 
         if not nombre or not telefono:
-            flash("Completa tu nombre y teléfono.")
+            flash("Completa tu nombre y teléfono.", "warning")
+
         elif len(nombre) > 100 or len(telefono) > 20:
             abort(400, description="Revisa los datos ingresados.")
+
         elif metodo_pago not in ("recoger", "tarjeta"):
-            abort(400, description="Selecciona un método de pago.")
+            flash("Selecciona una forma de pago válida.", "warning")
+            
+        elif entrega not in ("recoger", "consumir"):
+            flash("Selecciona cómo deseas recibir tu pedido.", "warning")
         else:
-            # Resultado de prueba generado en el servidor.
-            # No se solicitan datos bancarios ni se cobra dinero.
+            estado_pago = "Pendiente"
+            nombre_metodo_pago = "Pago al recoger"
+
             if metodo_pago == "tarjeta":
-                import secrets
+                import re
+                numero_tarjeta = re.sub(
+                    r"[\s-]",
+                    "",
+                    request.form.get("tarjeta_numero", "")
+                )
 
-                pago_aprobado = secrets.randbelow(10) < 8
+                vencimiento = request.form.get(
+                    "tarjeta_vencimiento", ""
+                ).strip()
 
-                if not pago_aprobado:
+                cvv = request.form.get(
+                    "tarjeta_cvv", ""
+                ).strip()
+
+                tarjeta_valida = (
+                    numero_tarjeta.isdigit()
+                    and len(numero_tarjeta) == 16
+                    and re.fullmatch(
+                        r"(0[1-9]|1[0-2])/[0-9]{2}",
+                        vencimiento
+                    ) is not None
+                    and re.fullmatch(r"[0-9]{3,4}", cvv) is not None
+                )
+
+                if tarjeta_valida:
+                    mes_txt, anio_txt = vencimiento.split("/")
+                    mes = int(mes_txt)
+                    anio = 2000 + int(anio_txt)
+
+                    ahora = datetime.now()
+
+                    if (anio, mes) < (ahora.year, ahora.month):
+                        tarjeta_valida = False
+
+                if not tarjeta_valida:
                     flash(
-                        "No fue posible completar el pago. "
-                        "Inténtalo nuevamente.",
+                        "Los datos de prueba de la tarjeta no son "
+                        "válidos. Usa únicamente datos ficticios.",
                         "warning"
                     )
+
                     return render_template(
                         "finalizar_compra.html",
                         productos=productos_carrito,
@@ -472,6 +551,11 @@ def finalizar_compra():
                         confirmado=False
                     )
 
+                # Pago ficticio: no se realiza ningún cobro.
+                estado_pago = "Pagado (simulación)"
+                nombre_metodo_pago = "Tarjeta (simulación)"
+
+            # Crear el pedido sin guardar datos de la tarjeta
             numero_pedido = uuid.uuid4().hex[:12].upper()
 
             nuevo_pedido = {
@@ -482,17 +566,13 @@ def finalizar_compra():
                 },
                 "productos": productos_carrito,
                 "total": total,
-                "entrega": "Recoger en cafetería",
-                "metodo_pago": (
-                    "Pago al recoger"
-                    if metodo_pago == "recoger"
-                    else "Tarjeta"
-                ),
-                "estado_pago": (
-                    "Pendiente"
-                    if metodo_pago == "recoger"
-                    else "Pagado"
-                ),
+                "entrega": (
+                    "Recoger en cafetería"
+                    if entrega == "recoger"
+                    else "Consumir en cafetería"
+                    ),
+                "metodo_pago": nombre_metodo_pago,
+                "estado_pago": estado_pago,
                 "estado_pedido": "Recibido",
                 "estado": "Pendiente",
                 "fecha": datetime.now()
@@ -515,7 +595,6 @@ def finalizar_compra():
         total=total,
         confirmado=False
     )
-
 @app.route("/api/productos", methods=["GET", "POST"])
 def api_productos():
     if request.method == "POST":

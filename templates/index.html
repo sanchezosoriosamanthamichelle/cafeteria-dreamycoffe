@@ -24,7 +24,6 @@
     </div>
 </section>
 
-
 <!-- CATEGORÍAS -->
 <section id="categorias" class="home-section">
     <div class="section-heading">
@@ -36,20 +35,29 @@
     </div>
 
     <div class="category-grid">
-        <a class="category-link" href="#cafe">
+        <button type="button" class="category-link filtro-categoria"
+                data-categoria="cafe">
             <span aria-hidden="true">☕</span>
-            <span>Cafes</span>
-        </a>
+            <span>Cafés</span>
+        </button>
 
-        <a class="category-link" href="#tes">
+        <button type="button" class="category-link filtro-categoria"
+                data-categoria="tes">
             <span aria-hidden="true">🍵</span>
             <span>Tés y matcha</span>
-        </a>
+        </button>
 
-        <a class="category-link" href="#postres">
+        <button type="button" class="category-link filtro-categoria"
+                data-categoria="postres">
             <span aria-hidden="true">🍰</span>
             <span>Postrecitos</span>
-        </a>
+        </button>
+
+        <button type="button" class="category-link filtro-categoria activo"
+                data-categoria="todos">
+            <span aria-hidden="true">✨</span>
+            <span>Ver todo</span>
+        </button>
     </div>
 </section>
 
@@ -102,7 +110,8 @@
     <div class="product-grid">
 
         {% for alumno in alumnos %}
-        <article class="product-card">
+        <article class="product-card"
+             data-categoria="{{ alumno.get('categoria', '')|lower|trim }}">
 
             <div class="product-card-art">
                 <img
@@ -140,7 +149,11 @@
                         class="btn-agregar-carrito"
                         {% if alumno.get('estado') != 'Disponible' %}disabled{% endif %}
                     >
-                        Añadir al carrito
+                    {% if alumno.get('estado') == 'Disponible' %}
+                    Añadir al carrito
+                    {% else %}
+                    Producto agotado
+                    {% endif %}
                     </button>
                 </form>
 
@@ -159,6 +172,79 @@
     {% endif %}
 
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const botones = document.querySelectorAll(".filtro-categoria");
+    const productos = document.querySelectorAll(".product-card");
+
+    function normalizar(texto) {
+        return texto
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim();
+    }
+
+    function grupoCategoria(categoria) {
+        const valor = normalizar(categoria);
+
+        if (valor.includes("cafe")) return "cafe";
+
+        if (
+            valor.includes("te") ||
+            valor.includes("matcha") ||
+            valor.includes("chai") ||
+            valor.includes("infusion")
+        ) {
+            return "tes";
+        }
+
+        if (
+            valor.includes("postre") ||
+            valor.includes("pastel") ||
+            valor.includes("reposteria") ||
+            valor.includes("galleta") ||
+            valor.includes("brownie") ||
+            valor.includes("pan")
+        ) {
+            return "postres";
+        }
+
+        return valor;
+    }
+
+    function filtrarProductos(seleccion) {
+        productos.forEach(function (producto) {
+            const categoriaProducto = grupoCategoria(
+                producto.dataset.categoria || ""
+            );
+
+            const mostrar =
+                seleccion === "todos" ||
+                categoriaProducto === seleccion;
+
+            producto.hidden = !mostrar;
+        });
+    }
+
+    botones.forEach(function (boton) {
+        boton.addEventListener("click", function () {
+            const seleccion = boton.dataset.categoria;
+
+            botones.forEach(function (otroBoton) {
+                otroBoton.classList.remove("activo");
+            });
+
+            boton.classList.add("activo");
+            filtrarProductos(seleccion);
+        });
+    });
+
+    // Mostrar todos los productos al entrar en la página.
+    filtrarProductos("todos");
+});
+</script>
 
 
 {% endblock %}

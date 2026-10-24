@@ -1,254 +1,533 @@
+
 {% extends "base.html" %}
 
 {% block contenido %}
 
-<section class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1>Panel de administración</h1>
-            <p>Gestiona los productos de Dreamy Coffee.</p>
-        </div>
+<div class="admin-layout">
 
-        <form method="POST" action="{{ url_for('logout') }}">
-            <button type="submit" class="btn btn-outline-dark">
-                Cerrar sesión
-            </button>
-        </form>
-    </div>
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="admin-main">
 
-    {% with mensajes = get_flashed_messages(with_categories=true) %}
-        {% for categoria, mensaje in mensajes %}
-            <div class="alert alert-{{ categoria }}">
-                {{ mensaje }}
-            </div>
-        {% endfor %}
-    {% endwith %}
-
-    <div class="mb-5" id="registro">
-        <h2>Agregar producto</h2>
-
-        <form method="POST"
-        action="{{ url_for('agregar') }}"
-        enctype="multipart/form-data">
-            <div class="mb-3">
-                <label for="nombre" class="form-label">Nombre</label>
-                <input
-                    type="text"
-                    class="form-control"
-                    id="nombre"
-                    name="nombre"
-                    maxlength="80"
-                    required>
+        <!-- ENCABEZADO -->
+        <header class="admin-header">
+            <div>
+                <span class="eyebrow">DREAMY COFFEE / GESTIÓN</span>
+                <h1>Panel de administración</h1>
+                <p>Gestiona los productos y pedidos de tu cafetería.</p>
             </div>
 
-            <div class="mb-3">
-                <label for="categoria" class="form-label">Categoría</label>
-                <input
-                    type="text"
-                    class="form-control"
-                    id="categoria"
-                    name="categoria"
-                    maxlength="20"
-                    placeholder="Ejemplo: café"
-                    required>
-            </div>
+            <div class="header-actions">
 
-<div class="mb-3">
-    <label for="precio" class="form-label">Precio (MXN)</label>
-    <input
-        type="number"
-        class="form-control"
-        id="precio"
-        name="precio"
-        min="0"
-        max="100000"
-        step="0.01"
-        placeholder="Ejemplo: 50"
-        required>
-</div>
-
-<div class="mb-3">
-    <label for="descripcion" class="form-label">Descripción</label>
-    <textarea
-        class="form-control"
-        id="descripcion"
-        name="descripcion"
-        maxlength="300"
-        rows="2"
-        placeholder="Ejemplo: Espresso con leche espumosa"></textarea>
-</div>
-
-<div class="mb-3">
-    <label for="imagen" class="form-label">
-        Imagen del producto
-    </label>
-    <input
-        type="file"
-        class="form-control"
-        id="imagen"
-        name="imagen"
-        accept=".jpg,.jpeg,.png,.webp"
-    >
-    <small class="form-text text-muted">
-        Formatos permitidos: JPG, PNG y WEBP.
-    </small>
-</div>
-
-
-            <div class="mb-3">
-                <label for="estado" class="form-label">Estado</label>
-                <select
-                    class="form-select"
-                    id="estado"
-                    name="estado"
-                    required>
-                    <option value="Disponible">Disponible</option>
-                    <option value="Agotado">Agotado</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-dark">
-                Guardar producto
-            </button>
-        </form>
-    </div>
-
-    <hr>
-
-    <h2 class="mb-3">Productos registrados</h2>
-
-    {% if alumnos %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Categoría</th>
-                        <th>Precio</th>
-                        <th>Descripción</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-
-<tbody>
-    {% for alumno in alumnos %}
-        <tr>
-            <td>{{ alumno.nombre }}</td>
-            <td>{{ alumno.categoria }}</td>
-
-            <td>
-                {% if alumno.precio is defined and alumno.precio is not none %}
-                    ${{ "%.2f"|format(alumno.precio) }}
-                {% else %}
-                    Sin precio
-                {% endif %}
-            </td>
-
-            <td>{{ alumno.descripcion or "—" }}</td>
-
-            <td>{{ alumno.estado }}</td>
-
-            <td>
-                <a
-                    href="{{ url_for('editar', id=alumno._id) }}"
-                    class="btn btn-sm btn-outline-dark">
-                    Editar
-                </a>
-
-                <form
-                    method="POST"
-                    action="{{ url_for('eliminar', id=alumno._id) }}"
-                    class="d-inline"
-                    onsubmit="return confirm('¿Eliminar este producto?');">
-                    <button
-                        type="submit"
-                        class="btn btn-sm btn-outline-danger">
-                        Eliminar
+                <form method="POST" action="{{ url_for('logout') }}">
+                    <button type="submit" class="btn btn-logout">
+                        Cerrar sesión
                     </button>
                 </form>
-            </td>
-        </tr>
-    {% endfor %}
-</tbody>
+            </div>
+        </header>
 
-            </table>
-        </div>
-    {% else %}
-        <p>Aún no hay productos registrados.</p>
-    {% endif %}
+        <!-- MENSAJES DE FLASK -->
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+            {% if mensajes %}
+                <div class="flash-messages">
+                    {% for categoria, mensaje in mensajes %}
+                        <div class="alert alert-{{ categoria }} alert-dismissible fade show"
+                             role="alert">
+                            {{ mensaje }}
 
-    
-    <hr class="my-5">
-
-    <h2 class="mb-3">Pedidos recibidos</h2>
-    <p>Consulta las compras y actualiza su estado.</p>
-
-    {% if pedidos %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>Número</th>
-                        <th>Cliente</th>
-                        <th>Productos</th>
-                        <th>Total</th>
-                        <th>Pago</th>
-                        <th>Estado del pedido</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for pedido in pedidos %}
-                        <tr>
-                            <td>{{ pedido.numero_pedido }}</td>
-
-                            <td>
-                                {{ pedido.cliente.nombre }}
-                                <br>
-                                <small>
-                                    {{ pedido.cliente.telefono }}
-                                </small>
-                            </td>
-
-                            <td>
-                                {% for producto in pedido.productos %}
-                                    <div>
-                                        {{ producto.nombre }}
-                                        × {{ producto.cantidad }}
-                                    </div>
-                                {% endfor %}
-                            </td>
-
-                            <td>
-                                ${{ "%.2f"|format(pedido.total) }}
-                            </td>
-
-                            <td>
-                                {{ pedido.metodo_pago }}
-                                <br>
-                                <strong>
-                                    {{ pedido.estado_pago or "Pendiente" }}
-                                </strong>
-                            </td>
-
-                            <td>
-                                {{ pedido.estado_pedido or pedido.estado or "Pendiente" }}
-                            </td>
-                        </tr>
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Cerrar">
+                            </button>
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <p>Aún no hay pedidos registrados.</p>
-    {% endif %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-    <a href="{{ url_for('inicio') }}"
-       class="btn btn-outline-secondary mt-3">
-        Volver a la cafetería
-    </a>
-</section>
+        <!-- FORMULARIO PARA AGREGAR PRODUCTOS -->
+        <section class="admin-card" id="registro">
+
+            <div class="card-heading">
+                <div class="heading-icon">＋</div>
+                <div>
+                    <h2>Agregar producto</h2>
+                    <p>Completa los datos para registrar un producto nuevo.</p>
+                </div>
+            </div>
+
+            <form method="POST"
+                  action="{{ url_for('agregar') }}"
+                  enctype="multipart/form-data">
+
+                <div class="row g-3">
+
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="col-md-6">
+
+                        <div class="form-field">
+                            <label for="nombre" class="form-label">
+                                Nombre <span class="required">*</span>
+                            </label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="nombre"
+                                   name="nombre"
+                                   maxlength="80"
+                                   placeholder="Ejemplo: Espresso"
+                                   required>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="precio" class="form-label">
+                                Precio (MXN) <span class="required">*</span>
+                            </label>
+
+                            <div class="price-input">
+                                <span>$</span>
+                                <input type="number"
+                                       class="form-control"
+                                       id="precio"
+                                       name="precio"
+                                       min="0"
+                                       max="100000"
+                                       step="0.01"
+                                       placeholder="50.00"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="descripcion" class="form-label">
+                                Descripción
+                            </label>
+
+                            <textarea class="form-control"
+                                      id="descripcion"
+                                      name="descripcion"
+                                      maxlength="300"
+                                      rows="4"
+                                      placeholder="Describe los ingredientes, el sabor o las características del producto."></textarea>
+
+                            <small class="field-help">
+                                Máximo 300 caracteres.
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <!-- COLUMNA DERECHA -->
+                    <div class="col-md-6">
+
+                        <div class="form-field">
+                            <label for="categoria" class="form-label">
+                                Categoría <span class="required">*</span>
+                            </label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   id="categoria"
+                                   name="categoria"
+                                   maxlength="20"
+                                   placeholder="Ejemplo: café"
+                                   required>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="imagen" class="form-label">
+                                Imagen del producto
+                            </label>
+
+                            <label for="imagen" class="upload-area">
+                                <span class="upload-icon">⇧</span>
+                                <strong>Seleccionar imagen</strong>
+                                <span id="file-name">
+                                    JPG, PNG o WEBP
+                                </span>
+
+                                <input type="file"
+                                       class="visually-hidden"
+                                       id="imagen"
+                                       name="imagen"
+                                       accept=".jpg,.jpeg,.png,.webp">
+                            </label>
+
+                            <small class="field-help">
+                                Selecciona una imagen de tu dispositivo.
+                            </small>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="estado" class="form-label">
+                                Estado del producto
+                            </label>
+
+                            <select class="form-select"
+                                    id="estado"
+                                    name="estado"
+                                    required>
+                                <option value="Disponible">Disponible</option>
+                                <option value="Agotado">Agotado</option>
+                            </select>
+                        </div>
+
+                        <div class="form-note">
+                            <span>✓</span>
+                            <p>Verifica los datos antes de guardar el producto.</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="form-footer">
+                    <button type="reset" class="btn btn-cancel">
+                        Limpiar campos
+                    </button>
+
+                    <button type="submit" class="btn btn-wine">
+                        ▣ &nbsp; Guardar producto
+                    </button>
+                </div>
+
+            </form>
+        </section>
+
+        <!-- PRODUCTOS REGISTRADOS -->
+        <section class="admin-card section-card">
+
+            <div class="section-heading">
+                <div>
+                    <h2>Productos registrados</h2>
+                    <p>Consulta y administra el catálogo de tu cafetería.</p>
+                </div>
+
+                <div class="table-tools">
+                    <input type="search"
+                           id="buscar-producto"
+                           class="form-control search-input"
+                           placeholder="Buscar producto..."
+                           aria-label="Buscar producto">
+
+                    <span class="total-count">
+                        Total: {{ alumnos|length }}
+                    </span>
+                </div>
+            </div>
+
+            {% if alumnos %}
+
+                <div class="table-responsive">
+                    <table class="table admin-table align-middle"
+                           id="tabla-productos">
+
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Categoría</th>
+                                <th>Precio</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th class="actions-column">Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for alumno in alumnos %}
+                                <tr class="product-row">
+
+                                    <td>
+                                        <div class="product-name">
+                                            <span class="product-symbol">☕</span>
+                                            <strong>{{ alumno.nombre }}</strong>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="category-label">
+                                            {{ alumno.categoria }}
+                                        </span>
+                                    </td>
+
+                                    <td class="price-cell">
+                                        {% if alumno.precio is defined and alumno.precio is not none %}
+                                            ${{ "%.2f"|format(alumno.precio) }}
+                                        {% else %}
+                                            Sin precio
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="description-cell">
+                                        {{ alumno.descripcion or "—" }}
+                                    </td>
+
+                                    <td>
+                                        {% if alumno.estado == "Disponible" %}
+                                            <span class="status-badge status-available">
+                                                <span class="status-dot"></span>
+                                                Disponible
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge status-unavailable">
+                                                <span class="status-dot"></span>
+                                                {{ alumno.estado or "Agotado" }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <div class="action-buttons">
+
+                                            <a href="{{ url_for('editar', id=alumno._id) }}"
+                                               class="btn btn-edit">
+                                                Editar
+                                            </a>
+
+                                            <form method="POST"
+                                                  action="{{ url_for('eliminar', id=alumno._id) }}"
+                                                  onsubmit="return confirm('¿Estás seguro de que deseas eliminar este producto?');">
+
+                                                <button type="submit"
+                                                        class="btn btn-delete">
+                                                    Eliminar
+                                                </button>
+
+                                            </form>
+
+                                        </div>
+                                    </td>
+
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+
+                    <p id="sin-resultados" class="empty-state" hidden>
+                        No se encontraron productos con ese nombre.
+                    </p>
+                </div>
+
+                <div class="table-footer">
+                    <span>Catálogo de productos</span>
+                    <a href="#registro">＋ Agregar otro producto</a>
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+                    <span>☕</span>
+                    <h3>Aún no hay productos registrados</h3>
+                    <p>Agrega tu primer producto utilizando el formulario superior.</p>
+                    <a href="#registro" class="btn btn-wine">
+                        Agregar primer producto
+                    </a>
+                </div>
+
+            {% endif %}
+
+        </section>
+
+        <!-- PEDIDOS RECIBIDOS -->
+        <section class="admin-card section-card" id="pedidos">
+
+            <div class="section-heading">
+                <div>
+                    <h2>Pedidos recibidos</h2>
+                    <p>Consulta las compras y revisa sus estados.</p>
+                </div>
+
+                <span class="total-count">
+                    Total: {{ pedidos|length }}
+                </span>
+            </div>
+
+            {% if pedidos %}
+
+                <div class="table-responsive">
+                    <table class="table admin-table align-middle">
+
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Cliente</th>
+                                <th>Productos</th>
+                                <th>Total</th>
+                                <th>Pago</th>
+                                <th>Estado del pedido</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for pedido in pedidos %}
+                                <tr>
+
+                                    <td>
+                                        <strong>{{ pedido.numero_pedido }}</strong>
+                                    </td>
+
+                                    <td>
+                                        <div class="customer-name">
+                                            {{ pedido.cliente.nombre }}
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ pedido.cliente.telefono }}
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        <div class="order-products">
+                                            {% for producto in pedido.productos %}
+                                                <div>
+                                                    <span>{{ producto.nombre }}</span>
+                                                    <span class="quantity">
+                                                        × {{ producto.cantidad }}
+                                                    </span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+
+                                    <td class="price-cell">
+                                        ${{ "%.2f"|format(pedido.total) }}
+                                    </td>
+
+                                    <td>
+                                        <div>{{ pedido.metodo_pago }}</div>
+                                        <small class="text-muted">
+                                            {{ pedido.estado_pago or "Pendiente" }}
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        {% set estado_pedido = pedido.estado_pedido or pedido.estado or "Pendiente" %}
+
+                                        {% if estado_pedido == "Entregado" or estado_pedido == "Completado" %}
+                                            <span class="status-badge status-available">
+                                                {{ estado_pedido }}
+                                            </span>
+                                        {% elif estado_pedido == "Cancelado" %}
+                                            <span class="status-badge status-unavailable">
+                                                {{ estado_pedido }}
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge status-pending">
+                                                {{ estado_pedido }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    
+<td>
+    {% if pedido.estado_pago == "Pendiente" %}
+        <form method="POST"
+              action="{{ url_for(
+                  'marcar_pedido_pagado',
+                  numero_pedido=pedido.numero_pedido
+              ) }}"
+              onsubmit="return confirm('¿Confirmas que el cliente ya pagó este pedido?');">
+
+            <button type="submit" class="btn btn-edit">
+                Marcar como pagado
+            </button>
+        </form>
+    {% elif pedido.estado_pago == "Pagado (simulación)" %}
+        <span class="status-badge status-available">
+            Pago simulado
+        </span>
+    {% else %}
+        <span class="status-badge status-available">
+            Pagado
+        </span>
+    {% endif %}
+</td>
+
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+                    <span>♡</span>
+                    <h3>No hay pedidos todavía</h3>
+                    <p>Cuando tus clientes realicen compras, aparecerán aquí.</p>
+                </div>
+
+            {% endif %}
+
+        </section>
+
+        <!-- REGRESAR A LA TIENDA -->
+        <footer class="admin-bottom">
+            <span>Dreamy Coffee · Panel de administración</span>
+
+            <a href="{{ url_for('inicio') }}">
+                ← Volver a la cafetería
+            </a>
+        </footer>
+
+    </main>
+
+</div>
+
+<!-- FUNCIONES VISUALES -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Búsqueda de productos en la tabla
+    const buscador = document.getElementById("buscar-producto");
+    const filas = document.querySelectorAll(
+        "#tabla-productos tbody .product-row"
+    );
+    const sinResultados = document.getElementById("sin-resultados");
+
+    if (buscador) {
+        buscador.addEventListener("input", function () {
+            const termino = this.value
+                .trim()
+                .toLocaleLowerCase();
+
+            let encontrados = 0;
+
+            filas.forEach(function (fila) {
+                const coincide = fila.textContent
+                    .toLocaleLowerCase()
+                    .includes(termino);
+
+                fila.hidden = !coincide;
+
+                if (coincide) {
+                    encontrados++;
+                }
+            });
+
+            if (sinResultados) {
+                sinResultados.hidden = encontrados !== 0;
+            }
+        });
+    }
+
+    // Mostrar el nombre del archivo seleccionado
+    const imagen = document.getElementById("imagen");
+    const nombreArchivo = document.getElementById("file-name");
+
+    if (imagen && nombreArchivo) {
+        imagen.addEventListener("change", function () {
+            if (this.files && this.files.length > 0) {
+                nombreArchivo.textContent = this.files[0].name;
+            } else {
+                nombreArchivo.textContent = "JPG, PNG o WEBP";
+            }
+        });
+    }
+
+});
+</script>
 
 {% endblock %}
-

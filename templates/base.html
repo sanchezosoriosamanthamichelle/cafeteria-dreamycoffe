@@ -23,10 +23,14 @@
 
         <!-- BARRA LATERAL -->
         <aside class="sidebar">
-            <a class="brand-logo" href="{{ url_for('inicio') }}">
-                <div class="brand-symbol">☾</div>
-                <span class="brand-name">dreamy-coffee</span>
-            </a>
+            <a href="{{ url_for('inicio') }}" class="brand">
+    <img
+        src="{{ url_for('static', filename='img/logo-dreamy..png') }}"
+        alt="Logo de Dreamy Coffee"
+        class="brand-logo"
+    >
+    <span>dreamy-coffee</span>
+</a>
 
             <!-- Buscador visual; conectaremos su funcionamiento después -->
             <form class="sidebar-search"

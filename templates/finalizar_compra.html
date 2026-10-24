@@ -2,125 +2,312 @@
 {% extends "base.html" %}
 
 {% block contenido %}
-<section class="carrito-pagina">
+<section class="finalizar-pagina">
 
     {% if confirmado %}
 
-        <!-- PEDIDO CONFIRMADO -->
-        <div class="carrito-vacio">
-            <span>☕</span>
+        <div class="confirmacion-pedido">
+            <div class="confirmacion-icono">♡</div>
 
             <h1>¡Gracias por tu pedido!</h1>
-            <p>Tu pedido se registró correctamente.</p>
+            <p class="texto-secundario">
+                Tu pedido se registró correctamente.
+            </p>
 
-            <div class="carrito-resumen">
-                <h2>Número de pedido</h2>
-                <p>{{ pedido.numero_pedido }}</p>
+            <div class="pedido-numero">
+                <span>Número de pedido</span>
+                <strong>{{ pedido.numero_pedido }}</strong>
+            </div>
 
+            <div class="pedido-resumen">
                 <h2>Resumen de tu compra</h2>
 
                 {% for producto in pedido.productos %}
-                    <p>
-                        {{ producto.nombre }}
-                        × {{ producto.cantidad }}
-                        — ${{ "%.2f"|format(producto.subtotal) }}
-                    </p>
+                    <div class="pedido-linea">
+                        <span>
+                            {{ producto.nombre }} × {{ producto.cantidad }}
+                        </span>
+                        <span>
+                            ${{ "%.2f"|format(producto.subtotal) }}
+                        </span>
+                    </div>
                 {% endfor %}
 
-                <h2>
-                    Total: ${{ "%.2f"|format(pedido.total) }}
-                </h2>
-
-                <h3>Entrega</h3>
-                <p>Recoger en Dreamy Coffee.</p>
-
-                <h3>Forma de pago</h3>
-                <p>Pago al recoger.</p>
+                <div class="pedido-total">
+                    <span>Total</span>
+                    <strong>${{ "%.2f"|format(pedido.total) }}</strong>
+                </div>
             </div>
 
-            <a href="{{ url_for('inicio') }}" class="carrito-volver">
+            <div class="pedido-detalles">
+                <p>
+                    <strong>Entrega:</strong>
+                    {{ pedido.entrega }}
+                </p>
+
+                <p>
+                    <strong>Forma de pago:</strong>
+                    {{ pedido.metodo_pago }}
+                </p>
+
+                <p>
+                    <strong>Estado del pago:</strong>
+                    {{ pedido.estado_pago }}
+                </p>
+            </div>
+
+            <a href="{{ url_for('inicio') }}" class="btn-pedido">
                 Volver al inicio
             </a>
         </div>
 
     {% else %}
 
-        
-<h1>Finalizar pedido ☕</h1>
-<p>¡Ya casi están listos tus cafecitos!</p>
+        <header class="finalizar-encabezado">
+            <span class="subtitulo-pagina">DREAMY COFFEE ♡</span>
+            <h1>Finalizar pedido</h1>
+            <p>¡Ya casi están listos tus cafecitos!</p>
+        </header>
 
-<div class="carrito-resumen">
-    <h2>Resumen de tu pedido</h2>
+        <div class="finalizar-contenido">
 
-    {% for producto in productos %}
-        <p>
-            {{ producto.nombre }} × {{ producto.cantidad }}
-            — ${{ "%.2f"|format(producto.subtotal) }}
-        </p>
-    {% endfor %}
+            <div class="pedido-resumen">
+                <h2>Tu pedido ☕</h2>
 
-    <h2>Total: ${{ "%.2f"|format(total) }}</h2>
-</div>
+                {% for producto in productos %}
+                    <div class="pedido-linea">
+                        <span>
+                            {{ producto.nombre }} × {{ producto.cantidad }}
+                        </span>
+                        <span>
+                            ${{ "%.2f"|format(producto.subtotal) }}
+                        </span>
+                    </div>
+                {% endfor %}
 
-<form method="POST" class="formulario-pedido">
+                <div class="pedido-total">
+                    <span>Total a pagar</span>
+                    <strong>${{ "%.2f"|format(total) }}</strong>
+                </div>
 
-    <label for="nombre">Tu nombre</label>
-    <input
-        id="nombre"
-        name="nombre"
-        type="text"
-        maxlength="100"
-        autocomplete="name"
-        required
-    >
+                <a href="{{ url_for('ver_carrito') }}"
+                   class="enlace-carrito">
+                    ← Volver al carrito
+                </a>
+            </div>
 
-    <label for="telefono">Teléfono de contacto</label>
-    <input
-        id="telefono"
-        name="telefono"
-        type="tel"
-        maxlength="20"
-        autocomplete="tel"
-        required
-    >
+            <form method="POST"
+                  class="formulario-pedido"
+                  id="formulario-pedido">
 
-    <div class="carrito-resumen">
-        <h3>Entrega</h3>
-        <p>Recoger en Dreamy Coffee.</p>
+                <div class="seccion-formulario">
+                    <h2>♡ Tus datos</h2>
+                    <p>¿A nombre de quién preparamos tu pedido?</p>
 
-        <h3>Forma de pago</h3>
+                    <label for="nombre">Nombre completo</label>
+                    <input
+                        id="nombre"
+                        name="nombre"
+                        type="text"
+                        maxlength="100"
+                        autocomplete="name"
+                        placeholder="Escribe tu nombre"
+                        required
+                    >
 
-        <label>
-            <input
-                type="radio"
-                name="metodo_pago"
-                value="recoger"
-                required
-            >
-            Pagar al recoger
-        </label>
+                    <label for="telefono">Teléfono de contacto</label>
+                    <input
+                        id="telefono"
+                        name="telefono"
+                        type="tel"
+                        maxlength="20"
+                        autocomplete="tel"
+                        placeholder="Tu número de teléfono"
+                        required
+                    >
+                </div>
 
-        <label>
-            <input
-                type="radio"
-                name="metodo_pago"
-                value="tarjeta"
-                required
-            >
-            Tarjeta
-        </label>
-    </div>
+                <div class="seccion-formulario">
+                    <h2>♡ ¿Cómo disfrutarás tu pedido?</h2>
 
-    <button type="submit" class="carrito-volver">
-        Confirmar mi pedido
-    </button>
+                    <label class="opcion-pedido">
+                        <input
+                            type="radio"
+                            name="entrega"
+                            value="recoger"
+                            required
+                        >
+                        <span class="opcion-icono">🛍️</span>
+                        <span class="opcion-texto">
+                            <strong>Recoger en cafetería</strong>
+                            <small>
+                                Pasas por tu pedido a Dreamy Coffee.
+                            </small>
+                        </span>
+                    </label>
 
-</form>
+                    <label class="opcion-pedido">
+                        <input
+                            type="radio"
+                            name="entrega"
+                            value="consumir"
+                            required
+                        >
+                        <span class="opcion-icono">☕</span>
+                        <span class="opcion-texto">
+                            <strong>Consumir en cafetería</strong>
+                            <small>
+                                Disfruta tu pedido en el establecimiento.
+                            </small>
+                        </span>
+                    </label>
+                </div>
 
-<a href="{{ url_for('ver_carrito') }}" class="carrito-volver">
-    ← Volver al carrito
-</a>
+                <div class="seccion-formulario">
+                    <h2>♡ Forma de pago</h2>
 
+                    <label class="opcion-pedido">
+                        <input
+                            type="radio"
+                            name="metodo_pago"
+                            value="recoger"
+                            required
+                        >
+                        <span class="opcion-icono">☕</span>
+                        <span class="opcion-texto">
+                            <strong>Pagar en cafetería</strong>
+                        </span>
+                    </label>
+
+                    <label class="opcion-pedido">
+                        <input
+                            type="radio"
+                            name="metodo_pago"
+                            value="tarjeta"
+                            required
+                        >
+                        <span class="opcion-icono">💳</span>
+                        <span class="opcion-texto">
+                            <strong>Tarjeta</strong>
+                    
+                        </span>
+                    </label>
+
+                    <div id="datos-tarjeta"
+                         class="datos-tarjeta"
+                         hidden>
+
+                        <h3> Datos de la tarjeta </h3>
+
+
+                        <label for="tarjeta_numero">
+                            Número de tarjeta de prueba
+                        </label>
+                        <input
+                            id="tarjeta_numero"
+                            name="tarjeta_numero"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="19"
+                            autocomplete="off"
+                            placeholder="1234 5678 9012 3456"
+                            pattern="[0-9 -]{16,19}"
+                            disabled
+                        >
+
+                        <label for="tarjeta_vencimiento">
+                            Vencimiento (MM/AA)
+                        </label>
+                        <input
+                            id="tarjeta_vencimiento"
+                            name="tarjeta_vencimiento"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="5"
+                            autocomplete="off"
+                            placeholder="12/30"
+                            pattern="(0[1-9]|1[0-2])/[0-9]{2}"
+                            disabled
+                        >
+
+                        <label for="tarjeta_cvv">
+                            CVV 
+                        </label>
+                        <input
+                            id="tarjeta_cvv"
+                            name="tarjeta_cvv"
+                            type="password"
+                            inputmode="numeric"
+                            maxlength="4"
+                            autocomplete="off"
+                            placeholder="123"
+                            pattern="[0-9]{3,4}"
+                            disabled
+                        >
+
+                        <p class="nota-pago">
+                            Estos datos solo se usan para validar el
+                            formulario. No se guardan en el pedido.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="btn-pedido btn-confirmar">
+                    Confirmar mi pedido 
+                </button>
+
+                <p class="nota-pago">
+                    Si eliges pagar en cafetería, tu pago quedará
+                    pendiente hasta que el personal lo registre.
+                </p>
+
+            </form>
+
+        </div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const opcionesPago = document.querySelectorAll(
+                'input[name="metodo_pago"]'
+            );
+
+            const datosTarjeta = document.getElementById(
+                "datos-tarjeta"
+            );
+
+            const camposTarjeta = datosTarjeta.querySelectorAll("input");
+
+            function actualizarFormularioPago() {
+                const seleccion = document.querySelector(
+                    'input[name="metodo_pago"]:checked'
+                );
+
+                const usarTarjeta = seleccion &&
+                    seleccion.value === "tarjeta";
+
+                datosTarjeta.hidden = !usarTarjeta;
+
+                camposTarjeta.forEach(function (campo) {
+                    campo.disabled = !usarTarjeta;
+                    campo.required = Boolean(usarTarjeta);
+
+                    if (!usarTarjeta) {
+                        campo.value = "";
+                    }
+                });
+            }
+
+            opcionesPago.forEach(function (opcion) {
+                opcion.addEventListener(
+                    "change",
+                    actualizarFormularioPago
+                );
+            });
+
+            actualizarFormularioPago();
+        });
+        </script>
 
     {% endif %}
 
