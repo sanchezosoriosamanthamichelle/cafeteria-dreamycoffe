@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,53 +11,72 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='estilos.css') }}">
 </head>
-<body>
+<body class="login-page">
 
-    <main class="container py-5" style="max-width: 450px;">
-        <div class="text-center mb-4">
-            <h1>☾ Dreamy Coffee</h1>
-            <p>Panel de administración</p>
-        </div>
+    <main class="login-container">
 
-        {% with mensajes = get_flashed_messages(with_categories=true) %}
-            {% for categoria, mensaje in mensajes %}
-                <div class="alert alert-{{ categoria }}">
-                    {{ mensaje }}
+        <div class="login-card">
+
+            <div class="login-brand">
+                <span class="login-decoration">❀</span>
+                <h1>☾ Dreamy Coffee</h1>
+                <p>Un espacio reservado para nosotros</p>
+            </div>
+
+            <div class="login-heading">
+                <h2>Bienvenido</h2>
+                <p>Ingresa tus datos para continuar</p>
+            </div>
+
+            {% with mensajes = get_flashed_messages(with_categories=true) %}
+                {% for categoria, mensaje in mensajes %}
+                    <div class="alert alert-{{ categoria }} login-alert">
+                        {{ mensaje }}
+                    </div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}">
+
+                <div class="login-field">
+                    <label for="usuario">Usuario</label>
+                    <input
+                        type="text"
+                        id="usuario"
+                        name="usuario"
+                        placeholder="Escribe tu usuario"
+                        required
+                        autocomplete="username">
                 </div>
-            {% endfor %}
-        {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}">
-            <div class="mb-3">
-                <label for="usuario" class="form-label">Usuario</label>
-                <input
-                    type="text"
-                    class="form-control"
-                    id="usuario"
-                    name="usuario"
-                    required
-                    autocomplete="username">
+                <div class="login-field">
+                    <label for="contrasena">Contraseña</label>
+                    <input
+                        type="password"
+                        id="contrasena"
+                        name="contrasena"
+                        placeholder="Escribe tu contraseña"
+                        required
+                        autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="login-button">
+                    Iniciar sesión
+                    <span>→</span>
+                </button>
+
+            </form>
+
+            <div class="login-footer">
+                <a href="{{ url_for('inicio') }}">
+                    ← Volver a la cafetería
+                </a>
             </div>
 
-            <div class="mb-3">
-                <label for="contrasena" class="form-label">Contraseña</label>
-                <input
-                    type="password"
-                    class="form-control"
-                    id="contrasena"
-                    name="contrasena"
-                    required
-                    autocomplete="current-password">
-            </div>
-
-            <button type="submit" class="btn btn-dark w-100">
-                Iniciar sesión
-            </button>
-        </form>
-
-        <div class="text-center mt-4">
-            <a href="{{ url_for('inicio') }}">Volver a la cafetería</a>
         </div>
+
+        <p class="login-copyright">DREAMY COFFEE · PANEL DE ADMINISTRACIÓN</p>
+
     </main>
 
 </body>

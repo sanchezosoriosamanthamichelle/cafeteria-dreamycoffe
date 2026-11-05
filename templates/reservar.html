@@ -1,0 +1,799 @@
+
+{% extends "base.html" %}
+
+{% block contenido %}
+
+<div class="reservacion-container">
+
+    <div class="reservacion-card">
+
+        <div class="reservacion-encabezado">
+            <span class="reservacion-decoracion">❀</span>
+            <h1>Reserva tu mesa</h1>
+            <p>Nos encantará recibirte en Dreamy Coffee.</p>
+        </div>
+
+        <div id="mensaje-reserva" role="status"></div>
+
+        <!-- DATOS DEL CLIENTE -->
+
+        <div class="mb-3">
+            <label class="form-label">Nombre completo</label>
+            <input type="text"
+                   id="nombre"
+                   class="form-control"
+                   maxlength="100"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Teléfono</label>
+            <input type="tel"
+                   id="telefono"
+                   class="form-control"
+                   maxlength="15"
+                   minlength="10"
+                   pattern="[0-9]{10,15}"
+                   placeholder="Ej. 9981234567"
+                   required>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Fecha de reservación</label>
+            <input type="date"
+                   id="fecha"
+                   class="form-control"
+                   min="{{ fecha_minima }}"
+                   value="{{ fecha_minima }}"
+                   required>
+        </div>
+
+        <!-- TABLA DE MESAS -->
+
+        <h3>Selecciona tu mesa y horario</h3>
+
+        <p class="text-muted small">
+            Elige un horario disponible para realizar tu apartado.
+            Tendrás 60 segundos para confirmar.
+        </p>
+
+        <div class="table-responsive">
+
+            <table class="table align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Num. de mesa</th>
+                        <th>Ubicación</th>
+                        <th>Horario</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabla-mesas">
+                    <tr>
+                        <td colspan="5">
+                            Cargando disponibilidad...
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+        
+<!-- RECIBO DEFINITIVO -->
+<div id="recibo-reserva" class="recibo-reserva" hidden>
+
+    <div class="recibo-contenido">
+
+        <!-- Encabezado -->
+        <div class="recibo-encabezado">
+            <span class="recibo-decoracion">☾</span>
+            <p class="recibo-marca">DREAMY COFFEE</p>
+            <h3>¡Tu reservación está confirmada!</h3>
+            <p class="recibo-subtitulo">
+                Gracias por elegirnos. Te esperamos.
+            </p>
+        </div>
+
+        <!-- Folio -->
+        <div class="recibo-folio">
+            <span>FOLIO DE RESERVACIÓN</span>
+            <strong id="recibo-folio"></strong>
+        </div>
+
+        <!-- Datos -->
+        <div class="recibo-datos">
+
+            <div class="recibo-seccion-titulo">
+                Información del cliente
+            </div>
+
+            <div class="recibo-fila">
+                <span>Nombre</span>
+                <strong id="recibo-nombre"></strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Teléfono</span>
+                <strong id="recibo-telefono"></strong>
+            </div>
+
+            <div class="recibo-separador"></div>
+
+            <div class="recibo-seccion-titulo">
+                Detalles de tu reservación
+            </div>
+
+            <div class="recibo-fila">
+                <span>Fecha</span>
+                <strong id="recibo-fecha"></strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Horario</span>
+                <strong id="recibo-horario"></strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Mesa</span>
+                <strong id="recibo-mesa"></strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Ubicación</span>
+                <strong id="recibo-ubicacion"></strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Duración</span>
+                <strong><span id="recibo-duracion"></span> minutos</strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Estado</span>
+                <strong id="recibo-estado" class="recibo-estado"></strong>
+            </div>
+
+        </div>
+
+        <!-- Pie -->
+        <div class="recibo-pie">
+            <p>♡</p>
+            <span>Un momento especial te espera.</span>
+            <small>Dreamy Coffee</small>
+        </div>
+
+        <!-- Botón -->
+        <div class="recibo-acciones">
+            <button type="button"
+                    id="btn-finalizar-reserva"
+                    class="btn-finalizar-reserva">
+                Finalizar
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const URL_API = "{{ url_for('api_reservaciones') }}";
+const URL_CREAR = "{{ url_for('crear_reservacion') }}";
+const URL_CONFIRMAR = "{{ url_for('confirmar_reservacion', id='ID_RESERVA') }}";
+const URL_CANCELAR = "{{ url_for('cancelar_reservacion_cliente', id='ID_RESERVA') }}";
+
+const tablaMesas = document.getElementById("tabla-mesas");
+const campoFecha = document.getElementById("fecha");
+// Recuperar la última fecha seleccionada
+const fechaGuardada = sessionStorage.getItem("fechaReservacion");
+
+if (fechaGuardada && fechaGuardada >= campoFecha.min) {
+    campoFecha.value = fechaGuardada;
+}
+
+// Guardar la fecha cada vez que el usuario la cambie
+campoFecha.addEventListener("change", function () {
+    sessionStorage.setItem("fechaReservacion", campoFecha.value);
+});
+
+// Campos de datos del cliente
+const campoNombre = document.getElementById("nombre");
+const campoTelefono = document.getElementById("telefono");
+
+// Recuperar los datos guardados
+campoNombre.value = sessionStorage.getItem("nombreCliente") || "";
+campoTelefono.value = sessionStorage.getItem("telefonoCliente") || "";
+
+// Guardar el nombre mientras se escribe
+campoNombre.addEventListener("input", function () {
+    sessionStorage.setItem("nombreCliente", campoNombre.value);
+});
+
+// Guardar el teléfono mientras se escribe
+campoTelefono.addEventListener("input", function () {
+    sessionStorage.setItem("telefonoCliente", campoTelefono.value);
+});
+
+const mensaje = document.getElementById("mensaje-reserva");
+
+let datosMesas = [];
+let temporizadorActualizacion = null;
+let actualizacionEnProceso = false;
+
+const vencimientosLocales = new Map();
+
+function mostrarMensaje(texto, tipo = "info") {
+    mensaje.textContent = texto;
+    mensaje.className = "alert alert-" + tipo;
+}
+
+function limpiarMensaje() {
+    mensaje.textContent = "";
+    mensaje.className = "";
+}
+
+function segundosRestantes(fechaVencimiento) {
+
+    const timestamp = Number(fechaVencimiento);
+
+    if (!Number.isFinite(timestamp)) {
+        return 0;
+    }
+
+    const diferencia = timestamp - Date.now();
+
+    return Math.max(0, Math.ceil(diferencia / 1000));
+}
+
+function formatoTiempo(segundos) {
+
+    const minutos = Math.floor(segundos / 60);
+    const segundosRestantes = segundos % 60;
+
+    return String(minutos).padStart(2, "0") + ":" +
+           String(segundosRestantes).padStart(2, "0");
+}
+
+function obtenerVencimientoLocal(horario) {
+
+    if (!vencimientosLocales.has(horario.id)) {
+
+        const vencimiento = Number(horario.expires_at_timestamp);
+
+        vencimientosLocales.set(
+            horario.id,
+            vencimiento
+        );
+    }
+
+    return vencimientosLocales.get(horario.id);
+}
+
+function actualizarContadores() {
+
+    document.querySelectorAll(".contador-reserva").forEach(contador => {
+
+        const restantes = segundosRestantes(
+            contador.dataset.vencimiento
+        );
+
+        contador.textContent = formatoTiempo(restantes);
+
+    });
+
+}
+
+async function cargarMesas() {
+
+    if (actualizacionEnProceso) return;
+
+    actualizacionEnProceso = true;
+
+    try {
+
+        const respuesta = await fetch(
+            URL_API + "?fecha=" + encodeURIComponent(campoFecha.value),
+            {
+                credentials: "same-origin"
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.ok) {
+            throw new Error(
+                datos.mensaje || "No se pudo consultar la disponibilidad."
+            );
+        }
+
+        datosMesas = datos.mesas;
+
+        // Eliminar vencimientos que ya no están activos
+        const idsActivos = [];
+
+        datosMesas.forEach(mesa => {
+            mesa.horarios.forEach(horario => {
+                if (horario.estado === "En proceso") {
+                    idsActivos.push(horario.id);
+                }
+            });
+        });
+
+        for (const id of vencimientosLocales.keys()) {
+            if (!idsActivos.includes(id)) {
+                vencimientosLocales.delete(id);
+            }
+        }
+
+        dibujarTabla();
+
+    } catch (error) {
+
+        mostrarMensaje(error.message, "danger");
+
+    } finally {
+
+        actualizacionEnProceso = false;
+
+    }
+}
+
+
+function dibujarTabla() {
+
+    tablaMesas.innerHTML = "";
+
+    const horariosSeleccionados = {};
+
+    document.querySelectorAll(".selector-horario").forEach(selector => {
+        horariosSeleccionados[selector.dataset.mesa] = selector.value;
+    });
+
+    datosMesas.forEach(mesa => {
+
+        const fila = document.createElement("tr");
+
+        const celdaNumero = document.createElement("td");
+        celdaNumero.textContent = "Mesa " + mesa.numero;
+
+        const celdaUbicacion = document.createElement("td");
+        celdaUbicacion.textContent = mesa.ubicacion;
+
+        const celdaHorario = document.createElement("td");
+        const selector = document.createElement("select");
+
+        selector.className = "form-select selector-horario";
+        selector.dataset.mesa = mesa.numero;
+
+        mesa.horarios.forEach(horario => {
+
+            const opcion = document.createElement("option");
+
+            opcion.value = horario.inicio;
+            opcion.textContent = horario.inicio + " - " + horario.fin;
+
+            selector.appendChild(opcion);
+
+        });
+
+        const miHorario = mesa.horarios.find(
+            horario =>
+                horario.estado === "En proceso" &&
+                horario.es_mi_apartado
+        );
+
+        if (miHorario) {
+
+            selector.value = miHorario.inicio;
+
+        } else if (horariosSeleccionados[mesa.numero]) {
+
+            selector.value = horariosSeleccionados[mesa.numero];
+
+        }
+
+        celdaHorario.appendChild(selector);
+
+        const celdaEstado = document.createElement("td");
+        const celdaAccion = document.createElement("td");
+
+        function actualizarFila() {
+
+            const horario = mesa.horarios.find(
+                h => h.inicio === selector.value
+            );
+
+            if (!horario) return;
+
+            celdaEstado.textContent = "";
+            celdaAccion.innerHTML = "";
+
+            const boton = document.createElement("button");
+
+            boton.type = "button";
+
+            if (horario.estado === "Disponible") {
+
+                const estado = document.createElement("span");
+                estado.className = "estado-disponible";
+                estado.textContent = "Disponible";
+
+                celdaEstado.appendChild(estado);
+
+                boton.className = "btn-reservar";
+                boton.textContent = "Reservar";
+
+                boton.addEventListener("click", () => {
+                    crearApartado(mesa, horario, boton);
+                });
+
+                celdaAccion.appendChild(boton);
+
+            } else if (horario.estado === "En proceso") {
+
+                if (horario.es_mi_apartado) {
+
+                    const estado = document.createElement("span");
+                    estado.className = "estado-proceso";
+                    estado.textContent = "Mi apartado";
+
+                    const contador = document.createElement("span");
+
+                    contador.className = "contador-reserva";
+
+                    contador.dataset.vencimiento =
+                        obtenerVencimientoLocal(horario);
+
+                    contador.textContent = formatoTiempo(
+                        segundosRestantes(contador.dataset.vencimiento)
+                    );
+
+                    celdaEstado.appendChild(estado);
+                    celdaEstado.appendChild(contador);
+
+                    // Botón confirmar
+                    boton.className = "btn-confirmar";
+                    boton.textContent = "✓ Confirmar";
+
+                    boton.addEventListener("click", () => {
+                        confirmarApartado(horario.id, boton);
+                    });
+
+                    celdaAccion.appendChild(boton);
+
+                    // Botón cancelar
+                    const botonCancelar = document.createElement("button");
+
+                    botonCancelar.type = "button";
+                    botonCancelar.className = "btn-cancelar";
+                    botonCancelar.textContent = "Cancelar";
+
+                    botonCancelar.addEventListener("click", () => {
+                        cancelarApartado(horario.id, botonCancelar);
+                    });
+
+                    celdaAccion.appendChild(botonCancelar);
+
+                } else {
+
+                    const estado = document.createElement("span");
+                    estado.className = "estado-proceso";
+                    estado.textContent = "En proceso";
+
+                    const contador = document.createElement("span");
+
+                    contador.className = "contador-reserva";
+
+                    contador.dataset.vencimiento =
+                        obtenerVencimientoLocal(horario);
+
+                    contador.textContent = formatoTiempo(
+                        segundosRestantes(contador.dataset.vencimiento)
+                    );
+
+                    celdaEstado.appendChild(estado);
+                    celdaEstado.appendChild(contador);
+
+                    boton.className = "btn-proceso";
+                    boton.textContent = "En proceso";
+                    boton.disabled = true;
+
+                    celdaAccion.appendChild(boton);
+
+                }
+
+            } else {
+
+                const estado = document.createElement("span");
+                estado.className = "estado-reservada";
+                estado.textContent = "Reservada";
+
+                celdaEstado.appendChild(estado);
+
+                boton.className = "btn-proceso";
+                boton.textContent = "Reservada";
+                boton.disabled = true;
+
+                celdaAccion.appendChild(boton);
+
+            }
+
+        }
+
+        selector.addEventListener("change", actualizarFila);
+
+        fila.appendChild(celdaNumero);
+        fila.appendChild(celdaUbicacion);
+        fila.appendChild(celdaHorario);
+        fila.appendChild(celdaEstado);
+        fila.appendChild(celdaAccion);
+
+        tablaMesas.appendChild(fila);
+
+        actualizarFila();
+
+    });
+
+}
+
+
+async function crearApartado(mesa, horario, boton) {
+
+    limpiarMensaje();
+
+    const nombre = document.getElementById("nombre").value.trim();
+    const telefono = document.getElementById("telefono").value.trim();
+
+    if (!nombre || !telefono || !campoFecha.value) {
+
+        mostrarMensaje(
+            "Completa tu nombre, teléfono y fecha.",
+            "warning"
+        );
+
+        return;
+    }
+
+    if (
+        nombre.length > 100 ||
+        !/^[0-9]{10,15}$/.test(telefono)
+    ) {
+
+        mostrarMensaje(
+            "Revisa tu nombre y número de teléfono.",
+            "warning"
+        );
+
+        return;
+    }
+
+    boton.disabled = true;
+
+    try {
+
+        const respuesta = await fetch(URL_CREAR, {
+
+            method: "POST",
+
+            credentials: "same-origin",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                nombre: nombre,
+                telefono: telefono,
+                fecha: campoFecha.value,
+                mesa: String(mesa.numero),
+                horario: horario.inicio
+            })
+
+        });
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.ok) {
+
+            throw new Error(
+                datos.mensaje || "No se pudo apartar la mesa."
+            );
+
+        }
+
+        mostrarMensaje(
+            "Tu mesa está apartada. Tienes 60 segundos para confirmar.",
+            "success"
+        );
+
+        await cargarMesas();
+
+    } catch (error) {
+
+        mostrarMensaje(error.message, "warning");
+
+        await cargarMesas();
+
+    } finally {
+
+        boton.disabled = false;
+
+    }
+
+}
+
+async function confirmarApartado(id, boton) {
+
+    if (!confirm("¿Deseas confirmar definitivamente tu reservación?")) {
+        return;
+    }
+
+    boton.disabled = true;
+
+    try {
+
+        const url = URL_CONFIRMAR.replace("ID_RESERVA", id);
+
+        const respuesta = await fetch(url, {
+
+            method: "POST",
+
+            credentials: "same-origin",
+
+            headers: {
+                "Content-Type": "application/json"
+            }
+
+        });
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.ok) {
+
+            throw new Error(
+                datos.mensaje || "No se pudo confirmar."
+            );
+
+        }
+
+        vencimientosLocales.delete(id);
+        window.location.href = datos.url_recibo;
+        return;
+
+    } catch (error) {
+
+        mostrarMensaje(error.message, "warning");
+
+        await cargarMesas();
+
+    }
+
+}
+
+async function cancelarApartado(id, boton) {
+
+    const aceptar = confirm(
+        "¿Estás seguro de que deseas cancelar tu apartado?"
+    );
+
+    if (!aceptar) {
+        return;
+    }
+
+    boton.disabled = true;
+
+    try {
+
+        const url = URL_CANCELAR.replace("ID_RESERVA", id);
+
+        const respuesta = await fetch(url, {
+
+            method: "POST",
+
+            credentials: "same-origin",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({})
+
+        });
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.ok) {
+
+            throw new Error(
+                datos.mensaje || "No se pudo cancelar el apartado."
+            );
+
+        }
+
+
+        mostrarMensaje(datos.mensaje, "success");
+
+        
+
+        await cargarMesas();
+
+    } catch (error) {
+
+        mostrarMensaje(error.message, "warning");
+
+        await cargarMesas();
+
+    }
+
+}
+
+function mostrarRecibo(datos) {
+
+    document.getElementById("recibo-folio").textContent = datos.folio;
+    document.getElementById("recibo-nombre").textContent = datos.nombre;
+    document.getElementById("recibo-telefono").textContent = datos.telefono;
+    document.getElementById("recibo-fecha").textContent = datos.fecha;
+    document.getElementById("recibo-horario").textContent = datos.horario;
+    document.getElementById("recibo-mesa").textContent = datos.mesa;
+    document.getElementById("recibo-ubicacion").textContent = datos.ubicacion;
+    document.getElementById("recibo-duracion").textContent =
+        datos.duracion_minutos;
+
+    document.getElementById("recibo-estado").textContent = datos.estado;
+
+    document.getElementById("recibo-reserva").hidden = false;
+
+    document.getElementById("recibo-reserva").scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+campoFecha.addEventListener("change", () => {
+
+    limpiarMensaje();
+
+    vencimientosLocales.clear();
+
+    cargarMesas();
+
+});
+document.getElementById("btn-finalizar-reserva")
+    .addEventListener("click", finalizarReserva);
+
+cargarMesas();
+
+// Consultar cambios de disponibilidad cada dos segundos
+temporizadorActualizacion = setInterval(cargarMesas, 2000);
+
+// Actualizar los contadores cada segundo
+setInterval(actualizarContadores, 1000);
+
+function finalizarReserva() {
+
+    // Borrar los datos del formulario guardados
+    sessionStorage.removeItem("fechaReservacion");
+    sessionStorage.removeItem("nombreCliente");
+    sessionStorage.removeItem("telefonoCliente");
+
+    // Actualizar la página
+    window.location.reload();
+
+}
+
+</script>
+
+
+{% endblock %}

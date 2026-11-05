@@ -1,0 +1,120 @@
+
+{% extends "base.html" %}
+
+{% block contenido %}
+
+<div class="recibo-reserva">
+
+    <div class="recibo-contenido">
+
+        <div class="recibo-encabezado">
+            <span class="recibo-decoracion">☾</span>
+            <p class="recibo-marca">DREAMY COFFEE</p>
+
+            <h3>¡Tu reservación está confirmada!</h3>
+
+            <p class="recibo-subtitulo">
+                Gracias por elegirnos. Te esperamos.
+            </p>
+        </div>
+
+        <div class="recibo-folio">
+            <span>FOLIO DE RESERVACIÓN</span>
+            <strong>{{ reserva.folio }}</strong>
+        </div>
+
+        <div class="recibo-datos">
+
+            <div class="recibo-seccion-titulo">
+                Información del cliente
+            </div>
+
+            <div class="recibo-fila">
+                <span>Nombre</span>
+                <strong>{{ reserva.nombre }}</strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Teléfono</span>
+                <strong>{{ reserva.telefono }}</strong>
+            </div>
+
+            <div class="recibo-separador"></div>
+
+            <div class="recibo-seccion-titulo">
+                Detalles de tu reservación
+            </div>
+
+            <div class="recibo-fila">
+                <span>Fecha</span>
+                <strong>{{ reserva.fecha_hora.strftime("%d/%m/%Y") }}</strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Horario</span>
+                <strong>{{ reserva.horario }}</strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Mesa</span>
+                <strong>{{ reserva.mesa }}</strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Ubicación</span>
+                <strong>{{ reserva.ubicacion }}</strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Duración</span>
+                <strong>{{ reserva.duracion_minutos }} minutos</strong>
+            </div>
+
+            <div class="recibo-fila">
+                <span>Estado</span>
+                <strong class="recibo-estado">
+                    {{ reserva.estado }}
+                </strong>
+            </div>
+
+        </div>
+
+        <div class="recibo-pie">
+            <p>♡</p>
+            <span>Un momento especial te espera.</span>
+            <small>Dreamy Coffee</small>
+        </div>
+
+        <div class="recibo-acciones">
+            
+            <button type="button"
+            class="btn-pdf-reserva"
+            onclick="window.print()">
+            ↓ Guardar recibo en PDF
+            </button>
+            
+            <button type="button"
+            id="btn-finalizar-reserva"
+            class="btn-finalizar-reserva">
+            Finalizar
+            </button>
+        </div>
+
+
+    </div>
+
+</div>
+
+<script>
+document.getElementById("btn-finalizar-reserva")
+    .addEventListener("click", function () {
+
+        sessionStorage.removeItem("fechaReservacion");
+        sessionStorage.removeItem("nombreCliente");
+        sessionStorage.removeItem("telefonoCliente");
+
+        window.location.href = "{{ url_for('reservar') }}";
+    });
+</script>
+
+{% endblock %}

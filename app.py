@@ -1,14 +1,12 @@
 import os
-from flask import (
-    Flask, render_template, request, redirect,
-    url_for, abort, session, flash
-)
+from flask import ( Flask, render_template, request, redirect,url_for, abort, session, flash)
 from functools import wraps
 from werkzeug.security import check_password_hash
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo import MongoClient, ReturnDocument
+from pymongo.errors import PyMongoError, DuplicateKeyError
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
+from datetime import date
 from flask import jsonify
 import uuid
 from werkzeug.utils import secure_filename
@@ -25,6 +23,59 @@ cliente = MongoClient(mongo_uri, serverSelectionTimeoutMS=10000)
 base_datos = cliente["dreamy_coffe"]
 alumnos = base_datos["productos"]
 pedidos = base_datos["pedidos"]
+reservaciones = base_datos["reservaciones"]
+
+bloqueos_reservas = base_datos["bloqueos_reservas"]
+
+# CONFIGURACIÓN DE RESERVACIONES
+
+MESAS = [
+    {"numero": 1, "ubicacion": "Interior"},
+    {"numero": 2, "ubicacion": "Interior"},
+    {"numero": 3, "ubicacion": "Interior"},
+    {"numero": 4, "ubicacion": "Exterior"},
+    {"numero": 5, "ubicacion": "Exterior"},
+    {"numero": 6, "ubicacion": "Exterior"}
+]
+
+HORARIOS_RESERVA = [
+    {
+        "inicio": "09:00",
+        "fin": "11:00",
+        "duracion": 120
+    },
+    {
+        "inicio": "11:00",
+        "fin": "13:00",
+        "duracion": 120
+    },
+    {
+        "inicio": "13:00",
+        "fin": "15:00",
+        "duracion": 120
+    },
+    {
+        "inicio": "15:00",
+        "fin": "17:00",
+        "duracion": 120
+    },
+    {
+        "inicio": "17:00",
+        "fin": "19:00",
+        "duracion": 120
+    },
+    {
+        "inicio": "19:00",
+        "fin": "20:00",
+        "duracion": 60
+    }
+]
+
+TIEMPO_APARTADO = 60
+
+HORA_APERTURA = "09:00"
+HORA_CIERRE = "20:00"
+
     
 app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 
@@ -40,6 +91,100 @@ def administrador_requerido(funcion):
             return redirect(url_for("login"))
         return funcion(*args, **kwargs)
     return verificar_sesion
+
+def buscar_mesa_disponible(mesa_numero, fecha_hora, fecha_final, ahora):
+
+    # Comprobar que la mesa exista
+    mesa = next(
+        (m for m in MESAS if m["numero"] == mesa_numero),
+        None
+    )
+
+    if mesa is None:
+        return None
+
+    # Buscar reservaciones que coincidan con la mesa
+    reservacion_existente = reservaciones.find_one({
+        "mesa": mesa_numero,
+
+        "fecha_hora": {"$lt": fecha_final},
+        "fecha_final": {"$gt": fecha_hora},
+
+        "$or": [
+            {"estado": "Confirmada"},
+            {
+                "estado": "En espera",
+                "expires_at": {"$gt": ahora}
+            }
+        ]
+    })
+
+    # Si ya está ocupada en ese horario
+    if reservacion_existente:
+        return None
+
+    return mesa
+
+def expirar_reservaciones():
+    ahora = datetime.now()
+
+    reservaciones.update_many(
+        {
+            "estado": "En espera",
+            "expires_at": {"$lte": ahora}
+        },
+        {
+            "$set": {
+                "estado": "Expirada"
+            }
+        }
+    )
+
+def adquirir_bloqueo_reservas():
+    propietario = uuid.uuid4().hex
+    ahora = datetime.now()
+
+    try:
+        bloqueo = bloqueos_reservas.find_one_and_update(
+            {
+                "_id": "asignacion_mesas",
+                "$or": [
+                    {"hasta": {"$lte": ahora}},
+                    {"hasta": {"$exists": False}}
+                ]
+            },
+            {
+                "$set": {
+                    "propietario": propietario,
+                    "hasta": ahora + timedelta(seconds=10)
+                }
+            },
+            upsert=True,
+            return_document=ReturnDocument.AFTER
+        )
+
+    except DuplicateKeyError:
+        return None
+
+    if bloqueo and bloqueo.get("propietario") == propietario:
+        return propietario
+
+    return None
+
+
+def liberar_bloqueo_reservas(propietario):
+    if propietario:
+        bloqueos_reservas.update_one(
+            {
+                "_id": "asignacion_mesas",
+                "propietario": propietario
+            },
+            {
+                "$set": {"hasta": datetime.now()}
+            }
+        )
+
+
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -73,18 +218,55 @@ def login():
 @app.route("/admin")
 @administrador_requerido
 def panel_admin():
+    expirar_reservaciones()
+
     lista = list(alumnos.find().sort("nombre", 1))
+
     lista_pedidos = list(
         pedidos.find().sort("fecha", -1)
+    )
+
+    # Mostrar únicamente reservaciones confirmadas
+    lista_reservaciones = list(
+        reservaciones.find(
+            {"estado": "Confirmada"}
+        ).sort("fecha_hora", 1)
     )
 
     return render_template(
         "admin.html",
         alumnos=lista,
-        pedidos=lista_pedidos
+        pedidos=lista_pedidos,
+        reservaciones=lista_reservaciones
+    )
+@app.route("/admin/reservacion/<id>/cancelar", methods=["POST"])
+@administrador_requerido
+def cancelar_reservacion(id):
+
+    if not ObjectId.is_valid(id):
+        abort(404)
+
+    ahora = datetime.now()
+
+    resultado = reservaciones.update_one(
+        {
+            "_id": ObjectId(id),
+            "estado": {"$in": ["Confirmada", "En espera"]}
+        },
+        {
+            "$set": {
+                "estado": "Cancelada",
+                "fecha_cancelacion": ahora
+            }
+        }
     )
 
+    if resultado.modified_count == 1:
+        flash("La reservación fue cancelada.", "success")
+    else:
+        flash("No se encontró una reservación activa.", "warning")
 
+    return redirect(url_for("panel_admin"))
 @app.route("/admin/pedido/<numero_pedido>/marcar-pagado", methods=["POST"])
 @administrador_requerido
 def marcar_pedido_pagado(numero_pedido):
@@ -184,6 +366,11 @@ def buscar_alumno(id):
 
 
 @app.route("/")
+def bienvenida():
+    return render_template("bienvenida.html")
+
+
+@app.route("/inicio")
 def inicio():
     termino = request.args.get("buscar", "").strip()
 
@@ -203,8 +390,6 @@ def inicio():
         alumnos=lista,
         buscar=termino
     )
-
-
 
 @app.route("/agregar", methods=["POST"])
 @administrador_requerido
@@ -320,6 +505,474 @@ def error_peticion(error):
     return render_template(
         "error.html", mensaje=error.description
     ), error.code
+
+@app.route("/reservar")
+def reservar():
+
+    return render_template(
+    "reservar.html",
+    fecha_minima=date.today().isoformat(),
+    mesas=MESAS,
+    horarios=HORARIOS_RESERVA
+    )
+
+@app.route("/api/reservaciones", methods=["GET"])
+def api_reservaciones():
+    # Obtener la fecha solicitada
+    fecha = request.args.get("fecha", "").strip()
+
+    try:
+        fecha_seleccionada = datetime.strptime(
+            fecha,
+            "%Y-%m-%d"
+        ).date()
+
+    except ValueError:
+        return jsonify({
+            "ok": False,
+            "mensaje": "La fecha no es válida."
+        }), 400
+
+    ahora = datetime.now()
+
+    # Actualizar el estado de los apartados vencidos
+    expirar_reservaciones()
+
+    cliente_id = session.get("cliente_reservas_id")
+
+    resultado_mesas = []
+
+    # Recorrer las seis mesas
+    for mesa in MESAS:
+
+        horarios_mesa = []
+
+        # Revisar cada horario de esa mesa
+        for horario in HORARIOS_RESERVA:
+
+            fecha_hora = datetime.strptime(
+                f"{fecha} {horario['inicio']}",
+                "%Y-%m-%d %H:%M"
+            )
+
+            fecha_final = datetime.strptime(
+                f"{fecha} {horario['fin']}",
+                "%Y-%m-%d %H:%M"
+            )
+
+            reservacion = reservaciones.find_one({
+                "mesa": mesa["numero"],
+                "fecha_hora": {"$lt": fecha_final},
+                "fecha_final": {"$gt": fecha_hora},
+                "$or": [
+                    {"estado": "Confirmada"},
+                    {
+                        "estado": "En espera",
+                        "expires_at": {"$gt": ahora}
+                    }
+                ]
+            })
+
+            # Estado inicial
+            estado = "Disponible"
+
+            datos_horario = {
+                "inicio": horario["inicio"],
+                "fin": horario["fin"],
+                "estado": estado
+            }
+
+            if reservacion:
+
+                if reservacion["estado"] == "Confirmada":
+
+                    datos_horario["estado"] = "Reservada"
+
+                elif reservacion["estado"] == "En espera":
+
+                    segundos = max(
+                        0,
+                        int(
+                            (
+                                reservacion["expires_at"] - ahora
+                            ).total_seconds()
+                        )
+                    )
+
+                    datos_horario["estado"] = "En proceso"
+                    datos_horario["id"] = str(reservacion["_id"])
+                    datos_horario["segundos_restantes"] = segundos
+                    datos_horario["expires_at"] = (
+                        reservacion["expires_at"].isoformat()
+                    )
+                    datos_horario["expires_at_timestamp"] = int(
+                        reservacion["expires_at"].timestamp() * 1000
+                    )
+
+                    datos_horario["es_mi_apartado"] = (
+                        cliente_id is not None
+                        and reservacion.get("cliente_id") == cliente_id
+                    )
+
+            horarios_mesa.append(datos_horario)
+
+        resultado_mesas.append({
+            "numero": mesa["numero"],
+            "ubicacion": mesa["ubicacion"],
+            "horarios": horarios_mesa
+        })
+
+    return jsonify({
+        "ok": True,
+        "fecha": fecha,
+        "mesas": resultado_mesas
+    })
+
+
+@app.route("/crear-reservacion", methods=["POST"])
+def crear_reservacion():
+
+    # Detectar si la solicitud viene de la nueva tabla
+    es_api = request.is_json
+
+    if es_api:
+        datos = request.get_json(silent=True) or {}
+    else:
+        datos = request.form
+
+    nombre = datos.get("nombre", "").strip()
+    telefono = datos.get("telefono", "").strip()
+    fecha = datos.get("fecha", "").strip()
+    mesa_numero = datos.get("mesa", "").strip()
+    horario_inicio = datos.get("horario", "").strip()
+
+    # Función para responder según el tipo de solicitud
+    def respuesta_error(mensaje, codigo=400):
+        if es_api:
+            return jsonify({
+                "ok": False,
+                "mensaje": mensaje
+            }), codigo
+
+        flash(mensaje, "warning")
+        return redirect(url_for("reservar"))
+
+    # Validar campos obligatorios
+    if not nombre or not telefono or not fecha or not mesa_numero or not horario_inicio:
+        return respuesta_error("Completa todos los campos.")
+
+    # Validar nombre y teléfono
+    if len(nombre) > 100:
+        return respuesta_error("El nombre es demasiado largo.")
+
+    if not telefono.isdigit() or not 10 <= len(telefono) <= 15:
+        return respuesta_error("Ingresa un teléfono válido.")
+
+    # Validar número de mesa
+    try:
+        mesa_numero = int(mesa_numero)
+    except ValueError:
+        return respuesta_error("Selecciona una mesa válida.")
+
+    mesa = next(
+        (m for m in MESAS if m["numero"] == mesa_numero),
+        None
+    )
+
+    if mesa is None:
+        return respuesta_error("La mesa seleccionada no existe.")
+
+    # Buscar el horario seleccionado
+    horario = next(
+        (
+            h for h in HORARIOS_RESERVA
+            if h["inicio"] == horario_inicio
+        ),
+        None
+    )
+
+    if horario is None:
+        return respuesta_error("Selecciona un horario válido.")
+
+    # Validar fecha
+    try:
+        fecha_hora = datetime.strptime(
+            f"{fecha} {horario['inicio']}",
+            "%Y-%m-%d %H:%M"
+        )
+
+        fecha_final = datetime.strptime(
+            f"{fecha} {horario['fin']}",
+            "%Y-%m-%d %H:%M"
+        )
+
+    except ValueError:
+        return respuesta_error("La fecha seleccionada no es válida.")
+
+    ahora = datetime.now()
+
+    if fecha_hora <= ahora:
+        return respuesta_error("Selecciona un horario futuro.")
+
+    # Identificar al cliente mediante su sesión
+    if "cliente_reservas_id" not in session:
+        session["cliente_reservas_id"] = uuid.uuid4().hex
+
+    cliente_id = session["cliente_reservas_id"]
+
+    # Limpiar reservaciones vencidas
+    expirar_reservaciones()
+
+    # Evitar asignaciones simultáneas
+    propietario = adquirir_bloqueo_reservas()
+
+    if not propietario:
+        return respuesta_error(
+            "Estamos procesando otra reservación. Intenta nuevamente.",
+            409
+        )
+
+    try:
+        mesa_disponible = buscar_mesa_disponible(
+            mesa_numero,
+            fecha_hora,
+            fecha_final,
+            ahora
+        )
+
+        if mesa_disponible is None:
+            return respuesta_error(
+                "Esta mesa ya está reservada para el horario seleccionado.",
+                409
+            )
+
+        nueva_reservacion = {
+            "nombre": nombre,
+            "telefono": telefono,
+            "cliente_id": cliente_id,
+            "fecha_hora": fecha_hora,
+            "fecha_final": fecha_final,
+            "duracion_minutos": horario["duracion"],
+            "mesa": mesa_numero,
+            "ubicacion": mesa["ubicacion"],
+            "horario": horario_inicio,
+            "estado": "En espera",
+            "fecha_registro": ahora,
+            "expires_at": ahora + timedelta(seconds=TIEMPO_APARTADO)
+        }
+
+        resultado = reservaciones.insert_one(nueva_reservacion)
+
+        nueva_reservacion["_id"] = resultado.inserted_id
+
+    finally:
+        liberar_bloqueo_reservas(propietario)
+
+    # Respuesta para la nueva tabla
+    if es_api:
+        return jsonify({
+            "ok": True,
+            "mensaje": "Tu mesa está apartada temporalmente.",
+            "id": str(nueva_reservacion["_id"]),
+            "mesa": mesa_numero,
+            "ubicacion": mesa["ubicacion"],
+            "fecha": fecha,
+            "horario": horario_inicio,
+            "estado": "En espera",
+            "expires_at": nueva_reservacion["expires_at"].isoformat(),
+            "segundos_restantes": TIEMPO_APARTADO
+        }), 201
+
+    # Mantener el funcionamiento anterior de formularios tradicionales
+    nueva_reservacion["folio"] = str(nueva_reservacion["_id"])
+
+    return render_template(
+        "confirmacion_reserva.html",
+        reserva=nueva_reservacion,
+        segundos_restantes=TIEMPO_APARTADO,
+        temporal=True
+    )
+
+
+
+
+@app.route("/confirmar-reservacion/<id>", methods=["POST"])
+def confirmar_reservacion(id):
+
+    if not ObjectId.is_valid(id):
+        abort(404)
+
+    ahora = datetime.now()
+
+    cliente_id = session.get("cliente_reservas_id")
+
+    if not cliente_id:
+        mensaje = "No tienes permiso para confirmar este apartado."
+
+        if request.is_json:
+            return jsonify({
+                "ok": False,
+                "mensaje": mensaje
+            }), 403
+
+        flash(mensaje, "warning")
+        return redirect(url_for("reservar"))
+
+    resultado = reservaciones.update_one(
+        {
+            "_id": ObjectId(id),
+            "cliente_id": cliente_id,
+            "estado": "En espera",
+            "expires_at": {"$gt": ahora}
+        },
+        {
+            "$set": {
+                "estado": "Confirmada",
+                "fecha_confirmacion": ahora
+            },
+            "$unset": {
+                "expires_at": ""
+            }
+        }
+    )
+
+    if resultado.modified_count == 1:
+
+        reserva = reservaciones.find_one({
+            "_id": ObjectId(id)
+        })
+
+        if reserva is None:
+            abort(404)
+
+        reserva["folio"] = str(reserva["_id"])
+
+        if request.is_json:
+            return jsonify({
+                "ok": True,
+                "mensaje": "¡Tu reservación ha sido confirmada!",
+                "url_recibo": url_for(
+                    "ver_recibo_reservacion",
+                    id=id
+                )
+            }), 200
+
+
+        return render_template(
+            "confirmacion_reserva.html",
+            reserva=reserva,
+            temporal=False
+        )
+
+    mensaje = (
+        "El tiempo para confirmar terminó o la reservación "
+        "ya no está disponible."
+    )
+
+    if request.is_json:
+        return jsonify({
+            "ok": False,
+            "mensaje": mensaje
+        }), 409
+
+    flash(mensaje, "warning")
+    return redirect(url_for("reservar"))
+
+
+
+@app.route("/recibo-reservacion/<id>")
+def ver_recibo_reservacion(id):
+
+    if not ObjectId.is_valid(id):
+        abort(404)
+
+    cliente_id = session.get("cliente_reservas_id")
+
+    if not cliente_id:
+        abort(404)
+
+    reserva = reservaciones.find_one({
+        "_id": ObjectId(id),
+        "cliente_id": cliente_id,
+        "estado": "Confirmada"
+    })
+
+    if reserva is None:
+        abort(404)
+
+    reserva["folio"] = str(reserva["_id"])
+
+    return render_template(
+        "confirmacion_reserva.html",
+        reserva=reserva
+    )
+
+
+@app.route("/cancelar-reservacion-cliente/<id>", methods=["POST"])
+def cancelar_reservacion_cliente(id):
+
+    if not ObjectId.is_valid(id):
+        abort(404)
+
+    cliente_id = session.get("cliente_reservas_id")
+
+    es_api = request.is_json
+
+    if not cliente_id:
+
+        mensaje = "No tienes permiso para cancelar este apartado."
+
+        if es_api:
+            return jsonify({
+                "ok": False,
+                "mensaje": mensaje
+            }), 403
+
+        flash(mensaje, "warning")
+        return redirect(url_for("reservar"))
+
+    ahora = datetime.now()
+
+    resultado = reservaciones.update_one(
+        {
+            "_id": ObjectId(id),
+            "cliente_id": cliente_id,
+            "estado": "En espera",
+            "expires_at": {"$gt": ahora}
+        },
+        {
+            "$set": {
+                "estado": "Cancelada",
+                "fecha_cancelacion": ahora
+            }
+        }
+    )
+
+    if resultado.modified_count == 1:
+
+        mensaje = "Tu apartado fue cancelado. La mesa está disponible."
+
+        if es_api:
+            return jsonify({
+                "ok": True,
+                "mensaje": mensaje
+            })
+
+        flash(mensaje, "success")
+
+    else:
+
+        mensaje = "El apartado ya venció o no se encuentra activo."
+
+        if es_api:
+            return jsonify({
+                "ok": False,
+                "mensaje": mensaje
+            }), 409
+
+        flash(mensaje, "warning")
+
+    return redirect(url_for("reservar"))
 
 @app.route("/ayuda")
 def ayuda():

@@ -1,34 +1,108 @@
 {% extends 'base.html' %}
 
 {% block contenido %}
-<section class="card shadow-sm">
-    <div class="card-body p-4">
 
-        <h2 class="h4">Ayuda de Dreamy Coffee ☕</h2>
+<section class="help-page">
 
-        <p class="text-secondary">
-            Guía para utilizar la cafetería.
-        </p>
+    <!-- ENCABEZADO -->
+    <div class="help-header">
+        <span class="help-eyebrow">❀ ESTAMOS PARA AYUDARTE ❀</span>
+        <h1>¿Cómo podemos ayudarte?</h1>
+        <p>Todo lo que necesitas saber para disfrutar tu experiencia en Dreamy Coffee.</p>
+    </div>
 
-        <div class="alert alert-info" role="note">
-            Utiliza datos ficticios durante las pruebas del proyecto.
+    <!-- GUÍA DE COMPRA -->
+    <div class="help-card">
+        <div class="help-card-heading">
+            <span class="help-icon">☕</span>
+            <div>
+                <h2>¿Cómo realizar un pedido?</h2>
+                <p>Sigue estos sencillos pasos.</p>
+            </div>
         </div>
 
-        <ol class="mb-4">
-            <li>Explora el menú para conocer los productos disponibles.</li>
-            <li>Agrega al carrito los cafecitos y postres que quieras pedir.</li>
-            <li>Entra al carrito para revisar los productos, las cantidades y el total.</li>
-            <li>Completa tus datos para registrar tu pedido.</li>
-            <li>Selecciona la opción de recoger tu pedido en Dreamy Coffee.</li>
-            <li>El pago se realiza al recoger; el sitio no procesa cobros en línea.</li>
-        </ol>
+        <div class="help-steps">
+            <div class="help-step">
+                <span>01</span>
+                <div>
+                    <h3>Explora nuestro menú</h3>
+                    <p>Conoce nuestros cafés, tés, matchas y postres disponibles.</p>
+                </div>
+            </div>
 
-        <a class="btn btn-primary" href="{{ url_for('inicio') }}">
-            Volver al inicio
-        </a>
-            
-        
+            <div class="help-step">
+                <span>02</span>
+                <div>
+                    <h3>Agrega tus favoritos</h3>
+                    <p>Selecciona los productos que quieras y añádelos al carrito.</p>
+                </div>
+            </div>
 
+            <div class="help-step">
+                <span>03</span>
+                <div>
+                    <h3>Revisa tu carrito</h3>
+                    <p>Verifica los productos, las cantidades y el total de tu compra.</p>
+                </div>
+            </div>
+
+            <div class="help-step">
+                <span>04</span>
+                <div>
+                    <h3>Completa tu pedido</h3>
+                    <p>Ingresa tus datos y selecciona cómo deseas recibir tu pedido.</p>
+                </div>
+            </div>
+
+            <div class="help-step">
+                <span>05</span>
+                <div>
+                    <h3>¡Disfruta tu pedido!</h3>
+                    <p>Recoge tu pedido en Dreamy Coffee y realiza el pago al recoger.</p>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- PREGUNTAS FRECUENTES -->
+    <div class="help-card">
+        <div class="help-card-heading">
+            <span class="help-icon">♡</span>
+            <div>
+                <h2>Preguntas frecuentes</h2>
+                <p>Resolvemos algunas dudas sobre tus pedidos.</p>
+            </div>
+        </div>
+
+        <div class="help-faq">
+            <details>
+                <summary>¿Cómo sé si mi pedido fue registrado correctamente?</summary>
+                <p>Al finalizar la compra, se muestra una página de confirmación con el número y los detalles del pedido.</p>
+            </details>
+
+            <details>
+                <summary>¿Dónde puedo recoger mi pedido?</summary>
+                <p>Los pedidos se recogen directamente en Dreamy Coffee.</p>
+            </details>
+
+            <details>
+                <summary>¿Cuándo debo realizar el pago?</summary>
+                <p>El pago se realiza al recoger tu pedido. El sitio no procesa cobros en línea.</p>
+            </details>
+
+            <details>
+                <summary>¿Qué métodos de pago puedo utilizar?</summary>
+                <p>Puedes seleccionar el pago al recoger tu pedido. Si mantienes la opción de tarjeta simulada, aclara que no se realiza ningún cobro real.</p>
+            </details>
+
+            <details>
+                <summary>¿Cómo puedo reservar una mesa?</summary>
+                <p>Ingresa a la sección de reservaciones, completa tus datos y selecciona la fecha, hora y mesa .</p>
+            </details>
+        </div>
+    </div>
+
+
 </section>
+
 {% endblock %}

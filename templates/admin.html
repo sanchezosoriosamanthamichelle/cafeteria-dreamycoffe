@@ -46,8 +46,67 @@
             {% endif %}
         {% endwith %}
 
+        <!-- NAVEGACIÓN DEL ADMINISTRADOR -->
+<nav class="admin-tabs">
+
+    <button type="button" class="admin-tab active" data-section="resumen">
+        ♡ Resumen
+    </button>
+
+    <button type="button" class="admin-tab" data-section="pedidos">
+        🛍 Pedidos
+    </button>
+
+    <button type="button" class="admin-tab" data-section="productos">
+        ☕ Productos
+    </button>
+
+    <button type="button" class="admin-tab" data-section="reservaciones">
+        ♧ Reservaciones
+    </button>
+
+    <button type="button" class="admin-tab" data-section="registro">
+        ＋ Agregar producto
+    </button>
+
+</nav>
+<!-- RESUMEN -->
+<section class="admin-card admin-panel-section" id="resumen">
+
+    <div class="card-heading">
+        <div>
+            <span class="eyebrow">DREAMY COFFEE</span>
+            <h2>Resumen general</h2>
+            <p>Un vistazo rápido a la actividad de tu cafetería.</p>
+        </div>
+    </div>
+
+    <div class="admin-summary-grid">
+
+        <div class="summary-card">
+            <span>🛍</span>
+            <h3>{{ pedidos|length }}</h3>
+            <p>Pedidos recibidos</p>
+        </div>
+
+        <div class="summary-card">
+            <span>☕</span>
+            <h3>{{ alumnos|length }}</h3>
+            <p>Productos registrados</p>
+        </div>
+
+        <div class="summary-card">
+            <span>♡</span>
+            <h3>{{ reservaciones|length }}</h3>
+            <p>Reservaciones registradas</p>
+        </div>
+
+    </div>
+
+</section>
+
         <!-- FORMULARIO PARA AGREGAR PRODUCTOS -->
-        <section class="admin-card" id="registro">
+        <section class="admin-card admin-panel-section" id="registro">
 
             <div class="card-heading">
                 <div class="heading-icon">＋</div>
@@ -196,7 +255,7 @@
         </section>
 
         <!-- PRODUCTOS REGISTRADOS -->
-        <section class="admin-card section-card">
+        <section class="admin-card section-card admin-panel-section" id="productos">
 
             <div class="section-heading">
                 <div>
@@ -331,7 +390,7 @@
         </section>
 
         <!-- PEDIDOS RECIBIDOS -->
-        <section class="admin-card section-card" id="pedidos">
+        <section class="admin-card section-card admin-panel-section" id="pedidos">
 
             <div class="section-heading">
                 <div>
@@ -462,6 +521,157 @@
             {% endif %}
 
         </section>
+<!-- RESERVACIONES -->
+<section class="admin-card section-card admin-panel-section" id="reservaciones">
+
+    <div class="card-heading">
+        <div>
+            <span class="eyebrow">DREAMY COFFEE</span>
+            <h2>Reservaciones de mesas</h2>
+            <p>Consulta y administra las reservaciones de tus clientes.</p>
+        </div>
+    </div>
+
+    {% if reservaciones %}
+
+    <div class="table-responsive">
+
+        <table class="table admin-table align-middle">
+
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Cliente</th>
+                    <th>Teléfono</th>
+                    <th>Fecha</th>
+                    <th>Horario</th>
+                    <th>Duración</th>
+                    <th>Mesa</th>
+                    <th>Ubicación</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for reserva in reservaciones %}
+                <tr>
+
+                    <td>
+                        <small>{{ reserva._id }}</small>
+                    </td>
+
+                    <td>
+                        <strong>{{ reserva.nombre }}</strong>
+                    </td>
+
+                    <td>{{ reserva.telefono }}</td>
+
+                    <td>
+                        {{ reserva.fecha_hora.strftime("%d/%m/%Y") }}
+                    </td>
+
+                    <td>
+                        {{ reserva.fecha_hora.strftime("%H:%M") }}
+                        -
+                        {{ reserva.fecha_final.strftime("%H:%M") }}
+                    </td>
+
+                    <td>
+                        {% set horas = reserva.duracion_minutos // 60 %}
+                        {% set minutos = reserva.duracion_minutos % 60 %}
+
+                        {% if horas > 0 %}
+                            {{ horas }} h
+                        {% endif %}
+
+                        {% if minutos > 0 %}
+                            {{ minutos }} min
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <strong>Mesa {{ reserva.mesa }}</strong>
+                    </td>
+
+                    <td>
+                        {% if reserva.ubicacion == "Interior" %}
+                            ☕ Interior
+                        {% elif reserva.ubicacion == "Exterior" %}
+                            🌷 Exterior
+                        {% else %}
+                            Sin especificar
+                        {% endif %}
+                    </td>
+
+                    <td>
+
+                        {% if reserva.estado == "Confirmada" %}
+
+                            <span class="status-badge status-available">
+                                {{ reserva.estado }}
+                            </span>
+
+                        {% elif reserva.estado == "En espera" %}
+
+                            <span class="status-badge status-pending">
+                                {{ reserva.estado }}
+                            </span>
+
+                        {% else %}
+
+                            <span class="status-badge status-unavailable">
+                                {{ reserva.estado }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if reserva.estado in ["Confirmada", "En espera"] %}
+
+                            <form method="POST"
+                                  action="{{ url_for('cancelar_reservacion', id=reserva._id) }}"
+                                  onsubmit="return confirm('¿Cancelar esta reservación?');">
+
+                                <button type="submit" class="btn btn-delete">
+                                    Cancelar
+                                </button>
+
+                            </form>
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+        <div class="empty-state">
+            <span>♡</span>
+            <h3>No hay reservaciones registradas</h3>
+            <p>Cuando tus clientes reserven una mesa, aparecerán aquí.</p>
+        </div>
+
+    {% endif %}
+
+</section>
+
 
         <!-- REGRESAR A LA TIENDA -->
         <footer class="admin-bottom">
@@ -479,6 +689,43 @@
 <!-- FUNCIONES VISUALES -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
+    // Navegación entre secciones del administrador
+const pestañas = document.querySelectorAll(".admin-tab");
+const secciones = document.querySelectorAll(".admin-panel-section");
+
+function mostrarSeccion(id) {
+
+    secciones.forEach(function (seccion) {
+        seccion.hidden = seccion.id !== id;
+    });
+
+    pestañas.forEach(function (pestaña) {
+        pestaña.classList.toggle(
+            "active",
+            pestaña.dataset.section === id
+        );
+    });
+}
+
+pestañas.forEach(function (pestaña) {
+    pestaña.addEventListener("click", function () {
+        mostrarSeccion(this.dataset.section);
+    });
+});
+
+// Abrir la pestaña de registro desde los enlaces
+document.querySelectorAll('a[href="#registro"]').forEach(function (enlace) {
+
+    enlace.addEventListener("click", function (evento) {
+        evento.preventDefault();
+        mostrarSeccion("registro");
+    });
+
+});
+
+// Mostrar el resumen al entrar
+mostrarSeccion("resumen");
 
     // Búsqueda de productos en la tabla
     const buscador = document.getElementById("buscar-producto");

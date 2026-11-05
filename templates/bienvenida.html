@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenida | Dreamy Coffee</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+</head>
+<body class="pagina-bienvenida">
+
+    <main class="bienvenida">
+        <div class="bienvenida-contenido">
+
+            <span class="bienvenida-etiqueta">CAFÉ & SWEETS</span>
+
+            <h1>Dreamy Coffee</h1>
+
+            <p>Un pequeño universo de sabores y momentos especiales.</p>
+
+            <a href="{{ url_for('inicio') }}" class="btn-entrar">
+                Entrar a la cafetería
+            </a>
+        </div>
+    </main>
+
+</body>
+</html>

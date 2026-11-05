@@ -5,6 +5,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <title>Dreamy Coffee | Café &amp; Sweets</title>
 
@@ -13,8 +15,8 @@
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='estilos.css') }}">
-<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -23,56 +25,62 @@
 
         <!-- BARRA LATERAL -->
         <aside class="sidebar">
-            <a href="{{ url_for('inicio') }}" class="brand">
-    <img
-        src="{{ url_for('static', filename='img/logo-dreamy..png') }}"
-        alt="Logo de Dreamy Coffee"
-        class="brand-logo"
-    >
-    <span>dreamy-coffee</span>
-</a>
 
-            <!-- Buscador visual; conectaremos su funcionamiento después -->
+            <a href="{{ url_for('inicio') }}" class="brand">
+                <img
+                    src="{{ url_for('static', filename='img/logo-dreamy..png') }}"
+                    alt="Logo de Dreamy Coffee"
+                    class="brand-logo"
+                    >
+                <span>Dreamy-Coffee</span>
+            </a>
+
+            <!-- BUSCADOR -->
             <form class="sidebar-search"
                   action="{{ url_for('inicio') }}"
                   method="get">
-                <span aria-hidden="true">⌕</span>
+
                 <input type="search"
-                name="buscar"
-                placeholder="Buscar..."
-                aria-label="Buscar productos"
-                value="{{ buscar or '' }}">
+                       name="buscar"
+                       placeholder="Buscar productos..."
+                       aria-label="Buscar productos"
+                       value="{{ buscar or '' }}">
+                       <span aria-hidden="true">⌕</span>
             </form>
 
-            <!-- Navegación -->
+            <!-- NAVEGACIÓN -->
             <nav class="sidebar-nav" aria-label="Menú principal">
 
-                <a class="sidebar-link "
-                   href="{{ url_for('inicio') }}">
-                    <span class="sidebar-icon">⌂</span>
-                    <span>Inicio</span>
-                </a>
-
-            <a class="sidebar-link"
-                href="{{ url_for('menu') }}">
-                <span class="sidebar-icon">☕</span>
-                <span>Menú</span>
-            </a>
-
-
-<a class="sidebar-link"
-   href="{{ url_for('login') }}">
-    <span class="sidebar-icon">⚙</span>
-    <span>Administración</span>
+                <a class="sidebar-link" href="{{ url_for('inicio') }}">
+    <span class="sidebar-icon">
+        <i class="bi bi-house-fill"></i>
+    </span>
+    <span>Inicio</span>
 </a>
 
+          <a class="sidebar-link" href="{{ url_for('menu') }}">
+                    <span class="sidebar-icon">☕</span>
+                    <span>Menú</span>
+                </a>
 
-                <a class="sidebar-link"
-                   href="{{ url_for('ayuda') }}">
-                    <span class="sidebar-icon">♡</span>
+                <a class="sidebar-link" href="{{ url_for('reservar') }}">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-calendar-heart"></i>
+                    </span>
+                    <span>Reservaciones</span>
+                </a>
+
+                <a class="sidebar-link" href="{{ url_for('ayuda') }}">
+                    <span class="sidebar-icon">
+                         <i class="bi bi-question-circle"></i>
+                        </span>
                     <span>Ayuda</span>
                 </a>
 
+                <a class="sidebar-link" href="{{ url_for('login') }}">
+                    <span class="sidebar-icon">⚙</span>
+                    <span>Administración</span>
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -84,18 +92,6 @@
 
         <!-- CONTENIDO DE CADA PÁGINA -->
         <main class="main-content">
-
-<div class="top-actions">
-    <a href="{{ url_for('ver_carrito') }}"
-       class="cart-button"
-       aria-label="Ver carrito de compras">
-        <span class="cart-icon">🛒</span>
-        <span>Carrito</span>
-        <span class="cart-count">{{ cantidad_carrito }}</span>
-    </a>
-</div>
-
-
 
             {% block contenido %}{% endblock %}
 

@@ -1,67 +1,81 @@
 
 {% extends 'base.html' %}
 {% block contenido %}
-
 <!-- PORTADA PRINCIPAL -->
 <section class="hero-dreamy">
-    <div class="hero-copy">
-        <span class="eyebrow">✿ TU RINCÓN FAVORITO ✿</span>
+<a href="menu" class="btn-descubrir">
+    Descubrir menú
+    <span>→</span>
+</a>
+    <div class="top-actions">
+        <a href="{{ url_for('ver_carrito') }}"
+           class="cart-button"
+           aria-label="Ver carrito de compras">
 
-        <h1>Un sorbito de<br>felicidad</h1>
+            <span class="cart-icon">🛒</span>
+            <span>Carrito</span>
+            <span class="cart-count">{{ cantidad_carrito }}</span>
 
-        <p>
-            Café, dulces y pequeños momentos
-            que hacen especial tu día.
-        </p>
-
-        <a href="#categorias" class="btn btn-dreamy">
-            Descubrir el menú</a>
-
+        </a>
     </div>
 
-    <div class="hero-photo" role="img"
-         aria-label="Taza de café en un ambiente acogedor">
-    </div>
 </section>
 
 <!-- CATEGORÍAS -->
 <section id="categorias" class="home-section">
+
     <div class="section-heading">
         <div>
-            <span class="eyebrow">HECHO CON AMOR</span>
-            <h2>Nuestro pequeño universo</h2>
+            <h3 class="section-subtitle"> ✿ Nuestro pequeño universo ✿ </h3>
+            <h2>Explora nuestras categorías</h2>
         </div>
-        <span class="heading-flower" aria-hidden="true">❀</span>
     </div>
 
     <div class="category-grid">
-        <button type="button" class="category-link filtro-categoria"
-                data-categoria="cafe">
-            <span aria-hidden="true">☕</span>
-            <span>Cafés</span>
-        </button>
 
-        <button type="button" class="category-link filtro-categoria"
-                data-categoria="tes">
-            <span aria-hidden="true">🍵</span>
-            <span>Tés y matcha</span>
-        </button>
+    <button type="button" class="category-link filtro-categoria"
+            data-categoria="cafe">
+        <img src="{{ url_for('static', filename='img/categoria-cafes.jpg') }}"
+             alt="Cafés">
+        <span class="category-overlay">
+            <span class="category-name">Cafés</span>
+            <span class="category-description">Momentos para disfrutar</span>
+        </span>
+    </button>
 
-        <button type="button" class="category-link filtro-categoria"
-                data-categoria="postres">
-            <span aria-hidden="true">🍰</span>
-            <span>Postrecitos</span>
-        </button>
+    <button type="button" class="category-link filtro-categoria"
+            data-categoria="tes">
+        <img src="{{ url_for('static', filename='img/categoria-tes.jpg') }}"
+             alt="Tés y matcha">
+        <span class="category-overlay">
+            <span class="category-name">Tés y matcha</span>
+            <span class="category-description">Un toque de tranquilidad</span>
+        </span>
+    </button>
 
-        <button type="button" class="category-link filtro-categoria activo"
-                data-categoria="todos">
-            <span aria-hidden="true">✨</span>
-            <span>Ver todo</span>
-        </button>
-    </div>
+    <button type="button" class="category-link filtro-categoria"
+            data-categoria="postres">
+        <img src="{{ url_for('static', filename='img/categoria-postres.jpg') }}"
+             alt="Postres">
+        <span class="category-overlay">
+            <span class="category-name">Postrecitos</span>
+            <span class="category-description">Pequeños antojos dulces</span>
+        </span>
+    </button>
+
+    <button type="button" class="category-link filtro-categoria activo"
+            data-categoria="todos">
+        <img src="{{ url_for('static', filename='img/categoria-todo.jpg') }}"
+             alt="Todos nuestros productos">
+        <span class="category-overlay">
+            <span class="category-name">Ver todo</span>
+            <span class="category-description">Descubre nuestro menú</span>
+        </span>
+    </button>
+
+</div>
+
 </section>
-
-
 <!-- BEBIDA DESTACADA -->
 <section class="featured-drink">
     <div class="featured-photo" role="img"
@@ -94,7 +108,7 @@
     {% endif %}
     <div class="section-heading">
         <div>
-            <span class="eyebrow">NUESTRO MENÚ</span>
+            <span class="eyebrow"> ✿ NUESTRO MENÚ ✿</span>
             <h2>Delicias de Dreamy</h2>
             <p class="section-description">
                 Encuentra tu próximo antojo favorito.
@@ -176,7 +190,11 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const botones = document.querySelectorAll(".filtro-categoria");
-    const productos = document.querySelectorAll(".product-card");
+    const productos = Array.from(
+        document.querySelectorAll(".product-card")
+    );
+
+    const LIMITE_INICIO = 8;
 
     function normalizar(texto) {
         return texto
@@ -215,14 +233,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function filtrarProductos(seleccion) {
+        let productosMostrados = 0;
+
         productos.forEach(function (producto) {
             const categoriaProducto = grupoCategoria(
                 producto.dataset.categoria || ""
             );
 
-            const mostrar =
+            const coincide =
                 seleccion === "todos" ||
                 categoriaProducto === seleccion;
+
+            let mostrar = coincide;
+
+            if (seleccion === "todos") {
+                mostrar = coincide &&
+                    productosMostrados < LIMITE_INICIO;
+            }
+
+            if (mostrar) {
+                productosMostrados++;
+            }
 
             producto.hidden = !mostrar;
         });
@@ -241,7 +272,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Mostrar todos los productos al entrar en la página.
     filtrarProductos("todos");
 });
 </script>
