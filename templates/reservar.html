@@ -196,6 +196,11 @@ const URL_CANCELAR = "{{ url_for('cancelar_reservacion_cliente', id='ID_RESERVA'
 
 const tablaMesas = document.getElementById("tabla-mesas");
 const campoFecha = document.getElementById("fecha");
+
+const campoNombre = document.getElementById("nombre");
+const campoTelefono = document.getElementById("telefono");
+const mensaje = document.getElementById("mensaje-reserva");
+
 // Recuperar la última fecha seleccionada
 const fechaGuardada = sessionStorage.getItem("fechaReservacion");
 
@@ -203,36 +208,36 @@ if (fechaGuardada && fechaGuardada >= campoFecha.min) {
     campoFecha.value = fechaGuardada;
 }
 
-// Guardar la fecha cada vez que el usuario la cambie
-campoFecha.addEventListener("change", function () {
-    sessionStorage.setItem("fechaReservacion", campoFecha.value);
-});
-
-// Campos de datos del cliente
-const campoNombre = document.getElementById("nombre");
-const campoTelefono = document.getElementById("telefono");
-
-// Recuperar los datos guardados
+// Recuperar datos del cliente
 campoNombre.value = sessionStorage.getItem("nombreCliente") || "";
 campoTelefono.value = sessionStorage.getItem("telefonoCliente") || "";
 
-// Guardar el nombre mientras se escribe
-campoNombre.addEventListener("input", function () {
+// Guardar datos del formulario
+campoNombre.addEventListener("input", () => {
     sessionStorage.setItem("nombreCliente", campoNombre.value);
 });
 
-// Guardar el teléfono mientras se escribe
-campoTelefono.addEventListener("input", function () {
+campoTelefono.addEventListener("input", () => {
     sessionStorage.setItem("telefonoCliente", campoTelefono.value);
 });
 
-const mensaje = document.getElementById("mensaje-reserva");
+campoFecha.addEventListener("change", () => {
+    sessionStorage.setItem("fechaReservacion", campoFecha.value);
+});
 
 let datosMesas = [];
+let fechaDatosMesas = "";
 let temporizadorActualizacion = null;
 let actualizacionEnProceso = false;
 
 const vencimientosLocales = new Map();
+const vencimientosEnGracia = new Set();
+const cancelacionesManuales = new Set();
+
+
+// --------------------------------------------------
+// MENSAJES
+// --------------------------------------------------
 
 function mostrarMensaje(texto, tipo = "info") {
     mensaje.textContent = texto;
@@ -243,6 +248,36 @@ function limpiarMensaje() {
     mensaje.textContent = "";
     mensaje.className = "";
 }
+
+
+// --------------------------------------------------
+// LEER RESPUESTAS DEL SERVIDOR
+// --------------------------------------------------
+
+async function leerRespuestaJSON(respuesta) {
+
+    const texto = await respuesta.text();
+
+    try {
+        return JSON.parse(texto);
+
+    } catch (error) {
+
+        console.error(
+            "El servidor devolvió una respuesta que no es JSON:",
+            texto
+        );
+
+        throw new Error(
+            "El servidor devolvió una respuesta inesperada. Revisa la terminal de Flask."
+        );
+    }
+}
+
+
+// --------------------------------------------------
+// CONTADOR
+// --------------------------------------------------
 
 function segundosRestantes(fechaVencimiento) {
 
@@ -257,6 +292,7 @@ function segundosRestantes(fechaVencimiento) {
     return Math.max(0, Math.ceil(diferencia / 1000));
 }
 
+
 function formatoTiempo(segundos) {
 
     const minutos = Math.floor(segundos / 60);
@@ -266,11 +302,17 @@ function formatoTiempo(segundos) {
            String(segundosRestantes).padStart(2, "0");
 }
 
+
 function obtenerVencimientoLocal(horario) {
 
     if (!vencimientosLocales.has(horario.id)) {
 
-        const vencimiento = Number(horario.expires_at_timestamp);
+        let vencimiento = Number(horario.expires_at_timestamp);
+
+        // Alternativa si no viene el timestamp numérico
+        if (!Number.isFinite(vencimiento)) {
+            vencimiento = Date.parse(horario.expires_at);
+        }
 
         vencimientosLocales.set(
             horario.id,
@@ -280,6 +322,11 @@ function obtenerVencimientoLocal(horario) {
 
     return vencimientosLocales.get(horario.id);
 }
+
+
+// --------------------------------------------------
+// ACTUALIZAR CONTADORES
+// --------------------------------------------------
 
 function actualizarContadores() {
 
@@ -291,13 +338,59 @@ function actualizarContadores() {
 
         contador.textContent = formatoTiempo(restantes);
 
-    });
+        if (
+            restantes === 0 &&
+            contador.dataset.miApartado === "true"
+        ) {
 
+            const id = contador.dataset.id;
+
+            if (
+                vencimientosEnGracia.has(id) ||
+                cancelacionesManuales.has(id)
+            ) {
+                return;
+            }
+
+            vencimientosEnGracia.add(id);
+
+            mostrarMensaje(
+                "Tu apartado temporal ha expirado. La mesa volverá a estar disponible.",
+                "warning"
+            );
+
+            // Mantener el mensaje durante 3 segundos
+            setTimeout(() => {
+
+                vencimientosEnGracia.delete(id);
+
+                cargarMesas();
+
+            }, 3000);
+        }
+    });
 }
+
+
+// --------------------------------------------------
+// CARGAR DISPONIBILIDAD DE LAS MESAS
+// --------------------------------------------------
 
 async function cargarMesas() {
 
-    if (actualizacionEnProceso) return;
+    if (actualizacionEnProceso) {
+        return;
+    }
+
+    // Comprobar si antes había un apartado propio
+    // Solo comparar si seguimos consultando la misma fecha
+    const habiaMiApartado = fechaDatosMesas === campoFecha.value &&
+        datosMesas.some(mesa =>
+            mesa.horarios.some(horario =>
+                horario.estado === "En proceso" &&
+                horario.es_mi_apartado
+            )
+        );
 
     actualizacionEnProceso = true;
 
@@ -310,55 +403,151 @@ async function cargarMesas() {
             }
         );
 
-        const datos = await respuesta.json();
+        const datos = await leerRespuestaJSON(respuesta);
 
         if (!respuesta.ok || !datos.ok) {
+
             throw new Error(
-                datos.mensaje || "No se pudo consultar la disponibilidad."
+                datos.mensaje ||
+                datos.error ||
+                "No se pudo consultar la disponibilidad."
             );
         }
 
-        datosMesas = datos.mesas;
+        // Detectar si un apartado propio acaba de expirar
+        datosMesas.forEach(mesaAnterior => {
 
-        // Eliminar vencimientos que ya no están activos
+            mesaAnterior.horarios.forEach(horarioAnterior => {
+
+                if (
+                    horarioAnterior.estado === "En proceso" &&
+                    horarioAnterior.es_mi_apartado
+                ) {
+
+                    const mesaNueva = datos.mesas.find(
+                        mesa => mesa.numero === mesaAnterior.numero
+                    );
+
+                    if (!mesaNueva) {
+                        return;
+                    }
+
+                    const horarioNuevo = mesaNueva.horarios.find(
+                        horario => horario.inicio === horarioAnterior.inicio
+                    );
+
+                    if (
+                        horarioNuevo &&
+                        horarioNuevo.estado === "Disponible"
+                    ) {
+
+                        const id = horarioAnterior.id;
+
+                        if (
+                            !cancelacionesManuales.has(id) &&
+                            !vencimientosEnGracia.has(id)
+                        ) {
+
+                            vencimientosEnGracia.add(id);
+
+                            mostrarMensaje(
+                                "Tu apartado temporal ha expirado. La mesa volverá a estar disponible.",
+                                "warning"
+                            );
+
+                            setTimeout(() => {
+
+                                vencimientosEnGracia.delete(id);
+
+                                cargarMesas();
+
+                            }, 3000);
+                        }
+                    }
+                }
+            });
+        });
+
+        // Actualizar los datos recibidos
+        datosMesas = datos.mesas;
+        fechaDatosMesas = campoFecha.value;
+
+        // Obtener los apartados que siguen activos
         const idsActivos = [];
 
         datosMesas.forEach(mesa => {
+
             mesa.horarios.forEach(horario => {
+
                 if (horario.estado === "En proceso") {
                     idsActivos.push(horario.id);
                 }
             });
         });
 
+        // Eliminar vencimientos que ya no están activos
         for (const id of vencimientosLocales.keys()) {
+
             if (!idsActivos.includes(id)) {
                 vencimientosLocales.delete(id);
             }
         }
 
-        dibujarTabla();
+        // Las cancelaciones manuales dejan de protegerse
+        // cuando el servidor confirma que ya no están activas
+        for (const id of cancelacionesManuales) {
+
+            if (!idsActivos.includes(id)) {
+                cancelacionesManuales.delete(id);
+            }
+        }
+
+        // Evitar reconstruir la tabla mientras el apartado
+        // sigue activo o mientras se muestra el aviso de expiración
+        const hayMiApartado = datosMesas.some(mesa =>
+            mesa.horarios.some(horario =>
+                horario.estado === "En proceso" &&
+                horario.es_mi_apartado
+            )
+        );
+
+        if (
+            vencimientosEnGracia.size === 0 &&
+            (!hayMiApartado || !habiaMiApartado) &&
+            !tablaMesas.contains(document.activeElement)
+        ) {
+
+            dibujarTabla();
+        }
 
     } catch (error) {
+
+        console.error("Error al cargar las mesas:", error);
 
         mostrarMensaje(error.message, "danger");
 
     } finally {
 
         actualizacionEnProceso = false;
-
     }
 }
 
+
+// --------------------------------------------------
+// DIBUJAR TABLA DE MESAS
+// --------------------------------------------------
 
 function dibujarTabla() {
 
     tablaMesas.innerHTML = "";
 
+    // Guardar los horarios seleccionados
     const horariosSeleccionados = {};
 
     document.querySelectorAll(".selector-horario").forEach(selector => {
+
         horariosSeleccionados[selector.dataset.mesa] = selector.value;
+
     });
 
     datosMesas.forEach(mesa => {
@@ -377,31 +566,33 @@ function dibujarTabla() {
         selector.className = "form-select selector-horario";
         selector.dataset.mesa = mesa.numero;
 
+        // Crear opciones de horarios
         mesa.horarios.forEach(horario => {
 
             const opcion = document.createElement("option");
 
             opcion.value = horario.inicio;
-            opcion.textContent = horario.inicio + " - " + horario.fin;
+
+            opcion.textContent =
+                horario.inicio + " - " + horario.fin;
 
             selector.appendChild(opcion);
-
         });
 
+        // Buscar si esta mesa tiene un apartado propio
         const miHorario = mesa.horarios.find(
             horario =>
                 horario.estado === "En proceso" &&
                 horario.es_mi_apartado
         );
 
-        if (miHorario) {
-
-            selector.value = miHorario.inicio;
-
-        } else if (horariosSeleccionados[mesa.numero]) {
+        if (horariosSeleccionados[mesa.numero]) {
 
             selector.value = horariosSeleccionados[mesa.numero];
 
+        } else if (miHorario) {
+
+            selector.value = miHorario.inicio;
         }
 
         celdaHorario.appendChild(selector);
@@ -409,13 +600,16 @@ function dibujarTabla() {
         const celdaEstado = document.createElement("td");
         const celdaAccion = document.createElement("td");
 
+
         function actualizarFila() {
 
             const horario = mesa.horarios.find(
                 h => h.inicio === selector.value
             );
 
-            if (!horario) return;
+            if (!horario) {
+                return;
+            }
 
             celdaEstado.textContent = "";
             celdaAccion.innerHTML = "";
@@ -424,9 +618,12 @@ function dibujarTabla() {
 
             boton.type = "button";
 
+
+            // HORARIO DISPONIBLE
             if (horario.estado === "Disponible") {
 
                 const estado = document.createElement("span");
+
                 estado.className = "estado-disponible";
                 estado.textContent = "Disponible";
 
@@ -436,22 +633,29 @@ function dibujarTabla() {
                 boton.textContent = "Reservar";
 
                 boton.addEventListener("click", () => {
+
                     crearApartado(mesa, horario, boton);
+
                 });
 
                 celdaAccion.appendChild(boton);
 
+
+            // HORARIO EN PROCESO
             } else if (horario.estado === "En proceso") {
 
                 if (horario.es_mi_apartado) {
 
                     const estado = document.createElement("span");
+
                     estado.className = "estado-proceso";
                     estado.textContent = "Mi apartado";
 
                     const contador = document.createElement("span");
 
                     contador.className = "contador-reserva";
+                    contador.dataset.id = horario.id;
+                    contador.dataset.miApartado = "true";
 
                     contador.dataset.vencimiento =
                         obtenerVencimientoLocal(horario);
@@ -468,7 +672,9 @@ function dibujarTabla() {
                     boton.textContent = "✓ Confirmar";
 
                     boton.addEventListener("click", () => {
+
                         confirmarApartado(horario.id, boton);
+
                     });
 
                     celdaAccion.appendChild(boton);
@@ -481,7 +687,12 @@ function dibujarTabla() {
                     botonCancelar.textContent = "Cancelar";
 
                     botonCancelar.addEventListener("click", () => {
-                        cancelarApartado(horario.id, botonCancelar);
+
+                        cancelarApartado(
+                            horario.id,
+                            botonCancelar
+                        );
+
                     });
 
                     celdaAccion.appendChild(botonCancelar);
@@ -489,12 +700,15 @@ function dibujarTabla() {
                 } else {
 
                     const estado = document.createElement("span");
+
                     estado.className = "estado-proceso";
                     estado.textContent = "En proceso";
 
                     const contador = document.createElement("span");
 
                     contador.className = "contador-reserva";
+                    contador.dataset.id = horario.id;
+                    contador.dataset.miApartado = "false";
 
                     contador.dataset.vencimiento =
                         obtenerVencimientoLocal(horario);
@@ -511,12 +725,14 @@ function dibujarTabla() {
                     boton.disabled = true;
 
                     celdaAccion.appendChild(boton);
-
                 }
 
+
+            // HORARIO RESERVADO
             } else {
 
                 const estado = document.createElement("span");
+
                 estado.className = "estado-reservada";
                 estado.textContent = "Reservada";
 
@@ -527,10 +743,9 @@ function dibujarTabla() {
                 boton.disabled = true;
 
                 celdaAccion.appendChild(boton);
-
             }
-
         }
+
 
         selector.addEventListener("change", actualizarFila);
 
@@ -543,18 +758,20 @@ function dibujarTabla() {
         tablaMesas.appendChild(fila);
 
         actualizarFila();
-
     });
-
 }
 
+
+// --------------------------------------------------
+// CREAR APARTADO
+// --------------------------------------------------
 
 async function crearApartado(mesa, horario, boton) {
 
     limpiarMensaje();
 
-    const nombre = document.getElementById("nombre").value.trim();
-    const telefono = document.getElementById("telefono").value.trim();
+    const nombre = campoNombre.value.trim();
+    const telefono = campoTelefono.value.trim();
 
     if (!nombre || !telefono || !campoFecha.value) {
 
@@ -594,23 +811,25 @@ async function crearApartado(mesa, horario, boton) {
             },
 
             body: JSON.stringify({
+
                 nombre: nombre,
                 telefono: telefono,
                 fecha: campoFecha.value,
                 mesa: String(mesa.numero),
                 horario: horario.inicio
-            })
 
+            })
         });
 
-        const datos = await respuesta.json();
+        const datos = await leerRespuestaJSON(respuesta);
 
         if (!respuesta.ok || !datos.ok) {
 
             throw new Error(
-                datos.mensaje || "No se pudo apartar la mesa."
+                datos.mensaje ||
+                datos.error ||
+                "No se pudo apartar la mesa."
             );
-
         }
 
         mostrarMensaje(
@@ -629,10 +848,13 @@ async function crearApartado(mesa, horario, boton) {
     } finally {
 
         boton.disabled = false;
-
     }
-
 }
+
+
+// --------------------------------------------------
+// CONFIRMAR APARTADO
+// --------------------------------------------------
 
 async function confirmarApartado(id, boton) {
 
@@ -655,21 +877,23 @@ async function confirmarApartado(id, boton) {
             headers: {
                 "Content-Type": "application/json"
             }
-
         });
 
-        const datos = await respuesta.json();
+        const datos = await leerRespuestaJSON(respuesta);
 
         if (!respuesta.ok || !datos.ok) {
 
             throw new Error(
-                datos.mensaje || "No se pudo confirmar."
+                datos.mensaje ||
+                datos.error ||
+                "No se pudo confirmar."
             );
-
         }
 
         vencimientosLocales.delete(id);
+
         window.location.href = datos.url_recibo;
+
         return;
 
     } catch (error) {
@@ -678,9 +902,16 @@ async function confirmarApartado(id, boton) {
 
         await cargarMesas();
 
-    }
+    } finally {
 
+        boton.disabled = false;
+    }
 }
+
+
+// --------------------------------------------------
+// CANCELAR APARTADO
+// --------------------------------------------------
 
 async function cancelarApartado(id, boton) {
 
@@ -693,6 +924,10 @@ async function cancelarApartado(id, boton) {
     }
 
     boton.disabled = true;
+
+    // Identificar la cancelación como manual
+    // para no mostrar el aviso de expiración
+    cancelacionesManuales.add(id);
 
     try {
 
@@ -709,35 +944,43 @@ async function cancelarApartado(id, boton) {
             },
 
             body: JSON.stringify({})
-
         });
 
-        const datos = await respuesta.json();
+        const datos = await leerRespuestaJSON(respuesta);
 
         if (!respuesta.ok || !datos.ok) {
 
             throw new Error(
-                datos.mensaje || "No se pudo cancelar el apartado."
+                datos.mensaje ||
+                datos.error ||
+                "No se pudo cancelar el apartado."
             );
-
         }
-
 
         mostrarMensaje(datos.mensaje, "success");
 
-        
+        vencimientosLocales.delete(id);
 
         await cargarMesas();
 
     } catch (error) {
 
+        cancelacionesManuales.delete(id);
+
         mostrarMensaje(error.message, "warning");
 
         await cargarMesas();
 
-    }
+    } finally {
 
+        boton.disabled = false;
+    }
 }
+
+
+// --------------------------------------------------
+// RECIBO
+// --------------------------------------------------
 
 function mostrarRecibo(datos) {
 
@@ -748,6 +991,7 @@ function mostrarRecibo(datos) {
     document.getElementById("recibo-horario").textContent = datos.horario;
     document.getElementById("recibo-mesa").textContent = datos.mesa;
     document.getElementById("recibo-ubicacion").textContent = datos.ubicacion;
+
     document.getElementById("recibo-duracion").textContent =
         datos.duracion_minutos;
 
@@ -758,42 +1002,59 @@ function mostrarRecibo(datos) {
     document.getElementById("recibo-reserva").scrollIntoView({
         behavior: "smooth"
     });
-
 }
+
+
+// --------------------------------------------------
+// CAMBIAR FECHA
+// --------------------------------------------------
 
 campoFecha.addEventListener("change", () => {
 
     limpiarMensaje();
 
+    // No comparar los apartados de fechas diferentes
+    datosMesas = [];
+    fechaDatosMesas = "";
+
     vencimientosLocales.clear();
 
     cargarMesas();
-
 });
+
+
+// --------------------------------------------------
+// FINALIZAR RESERVA
+// --------------------------------------------------
+
 document.getElementById("btn-finalizar-reserva")
     .addEventListener("click", finalizarReserva);
 
+
+function finalizarReserva() {
+
+    sessionStorage.removeItem("fechaReservacion");
+    sessionStorage.removeItem("nombreCliente");
+    sessionStorage.removeItem("telefonoCliente");
+
+    window.location.reload();
+}
+
+
+// --------------------------------------------------
+// INICIAR ACTUALIZACIONES
+// --------------------------------------------------
+
 cargarMesas();
 
-// Consultar cambios de disponibilidad cada dos segundos
+// Consultar disponibilidad cada dos segundos
 temporizadorActualizacion = setInterval(cargarMesas, 2000);
 
 // Actualizar los contadores cada segundo
 setInterval(actualizarContadores, 1000);
 
-function finalizarReserva() {
-
-    // Borrar los datos del formulario guardados
-    sessionStorage.removeItem("fechaReservacion");
-    sessionStorage.removeItem("nombreCliente");
-    sessionStorage.removeItem("telefonoCliente");
-
-    // Actualizar la página
-    window.location.reload();
-
-}
-
 </script>
+
 
 
 {% endblock %}

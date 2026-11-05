@@ -5,7 +5,7 @@ from werkzeug.security import check_password_hash
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from bson import ObjectId
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from datetime import date
 from flask import jsonify
 import uuid
@@ -24,7 +24,6 @@ base_datos = cliente["dreamy_coffe"]
 alumnos = base_datos["productos"]
 pedidos = base_datos["pedidos"]
 reservaciones = base_datos["reservaciones"]
-
 bloqueos_reservas = base_datos["bloqueos_reservas"]
 
 # CONFIGURACIÓN DE RESERVACIONES
@@ -72,6 +71,8 @@ HORARIOS_RESERVA = [
 ]
 
 TIEMPO_APARTADO = 60
+def hora_utc():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 HORA_APERTURA = "09:00"
 HORA_CIERRE = "20:00"
@@ -125,8 +126,10 @@ def buscar_mesa_disponible(mesa_numero, fecha_hora, fecha_final, ahora):
 
     return mesa
 
+
+
 def expirar_reservaciones():
-    ahora = datetime.now()
+    ahora = hora_utc()
 
     reservaciones.update_many(
         {
@@ -140,9 +143,10 @@ def expirar_reservaciones():
         }
     )
 
+
 def adquirir_bloqueo_reservas():
     propietario = uuid.uuid4().hex
-    ahora = datetime.now()
+    ahora = hora_utc()
 
     try:
         bloqueo = bloqueos_reservas.find_one_and_update(
@@ -180,11 +184,11 @@ def liberar_bloqueo_reservas(propietario):
                 "propietario": propietario
             },
             {
-                "$set": {"hasta": datetime.now()}
+                "$set": {
+                    "hasta": hora_utc()
+                }
             }
         )
-
-
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -533,7 +537,7 @@ def api_reservaciones():
             "mensaje": "La fecha no es válida."
         }), 400
 
-    ahora = datetime.now()
+    ahora = hora_utc()
 
     # Actualizar el estado de los apartados vencidos
     expirar_reservaciones()
@@ -603,11 +607,13 @@ def api_reservaciones():
                     datos_horario["id"] = str(reservacion["_id"])
                     datos_horario["segundos_restantes"] = segundos
                     datos_horario["expires_at"] = (
-                        reservacion["expires_at"].isoformat()
+                        reservacion["expires_at"].isoformat() + "Z"
                     )
                     datos_horario["expires_at_timestamp"] = int(
-                        reservacion["expires_at"].timestamp() * 1000
-                    )
+                        reservacion["expires_at"].replace(
+                            tzinfo=timezone.utc
+                            ).timestamp() * 1000
+                        )
 
                     datos_horario["es_mi_apartado"] = (
                         cliente_id is not None
@@ -709,8 +715,9 @@ def crear_reservacion():
     except ValueError:
         return respuesta_error("La fecha seleccionada no es válida.")
 
-    ahora = datetime.now()
 
+    ahora = datetime.now()
+    ahora_utc = hora_utc()
     if fecha_hora <= ahora:
         return respuesta_error("Selecciona un horario futuro.")
 
@@ -737,7 +744,7 @@ def crear_reservacion():
             mesa_numero,
             fecha_hora,
             fecha_final,
-            ahora
+            ahora_utc
         )
 
         if mesa_disponible is None:
@@ -758,7 +765,7 @@ def crear_reservacion():
             "horario": horario_inicio,
             "estado": "En espera",
             "fecha_registro": ahora,
-            "expires_at": ahora + timedelta(seconds=TIEMPO_APARTADO)
+            "expires_at": ahora_utc + timedelta(seconds=TIEMPO_APARTADO)
         }
 
         resultado = reservaciones.insert_one(nueva_reservacion)
@@ -767,6 +774,13 @@ def crear_reservacion():
 
     finally:
         liberar_bloqueo_reservas(propietario)
+        
+        print("Bloqueo liberado para:", propietario)
+        
+        print(
+            "Resultado de liberación:",
+            bloqueos_reservas.find_one({"_id": "asignacion_mesas"})
+            )
 
     # Respuesta para la nueva tabla
     if es_api:
@@ -779,7 +793,7 @@ def crear_reservacion():
             "fecha": fecha,
             "horario": horario_inicio,
             "estado": "En espera",
-            "expires_at": nueva_reservacion["expires_at"].isoformat(),
+            "expires_at": nueva_reservacion["expires_at"].isoformat() + "Z",
             "segundos_restantes": TIEMPO_APARTADO
         }), 201
 
@@ -802,7 +816,7 @@ def confirmar_reservacion(id):
     if not ObjectId.is_valid(id):
         abort(404)
 
-    ahora = datetime.now()
+    ahora = hora_utc()
 
     cliente_id = session.get("cliente_reservas_id")
 
@@ -931,7 +945,7 @@ def cancelar_reservacion_cliente(id):
         flash(mensaje, "warning")
         return redirect(url_for("reservar"))
 
-    ahora = datetime.now()
+    ahora = hora_utc()
 
     resultado = reservaciones.update_one(
         {
