@@ -229,10 +229,12 @@ let datosMesas = [];
 let fechaDatosMesas = "";
 let temporizadorActualizacion = null;
 let actualizacionEnProceso = false;
+let actualizacionPendiente = false;
 
 const vencimientosLocales = new Map();
 const vencimientosEnGracia = new Set();
 const cancelacionesManuales = new Set();
+const vencimientosNotificados = new Set();
 
 
 // --------------------------------------------------
@@ -347,10 +349,12 @@ function actualizarContadores() {
 
             if (
                 vencimientosEnGracia.has(id) ||
-                cancelacionesManuales.has(id)
+                cancelacionesManuales.has(id) ||
+                vencimientosNotificados.has(id)
             ) {
                 return;
             }
+            vencimientosNotificados.add(id);
 
             vencimientosEnGracia.add(id);
 
@@ -379,6 +383,7 @@ function actualizarContadores() {
 async function cargarMesas() {
 
     if (actualizacionEnProceso) {
+        actualizacionPendiente = true;
         return;
     }
 
@@ -493,6 +498,15 @@ async function cargarMesas() {
             }
         }
 
+        for (const id of vencimientosNotificados) {
+            if (
+                !idsActivos.includes(id) &&
+                !vencimientosEnGracia.has(id)
+            ) {
+                vencimientosNotificados.delete(id);
+            }
+        }
+
         // Las cancelaciones manuales dejan de protegerse
         // cuando el servidor confirma que ya no están activas
         for (const id of cancelacionesManuales) {
@@ -525,12 +539,14 @@ async function cargarMesas() {
         mostrarMensaje(error.message, "danger");
 
     } finally {
-
         actualizacionEnProceso = false;
+        if (actualizacionPendiente) {
+            actualizacionPendiente = false;
+            cargarMesas();
+        }
     }
+
 }
-
-
 // --------------------------------------------------
 // DIBUJAR TABLA DE MESAS
 // --------------------------------------------------

@@ -7,6 +7,7 @@ from pymongo.errors import PyMongoError, DuplicateKeyError
 from bson import ObjectId
 from datetime import datetime, timedelta, timezone
 from datetime import date
+from zoneinfo import ZoneInfo
 from flask import jsonify
 import uuid
 from werkzeug.utils import secure_filename
@@ -71,8 +72,14 @@ HORARIOS_RESERVA = [
 ]
 
 TIEMPO_APARTADO = 60
+
+ZONA_HORARIA = ZoneInfo("America/Cancun")
+
 def hora_utc():
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+def hora_cancun():
+    return datetime.now(ZONA_HORARIA)
 
 HORA_APERTURA = "09:00"
 HORA_CIERRE = "20:00"
@@ -160,7 +167,7 @@ def adquirir_bloqueo_reservas():
             {
                 "$set": {
                     "propietario": propietario,
-                    "hasta": ahora + timedelta(seconds=10)
+                    "hasta": ahora + timedelta(seconds=30)
                 }
             },
             upsert=True,
@@ -250,7 +257,7 @@ def cancelar_reservacion(id):
     if not ObjectId.is_valid(id):
         abort(404)
 
-    ahora = datetime.now()
+    ahora = hora_utc()
 
     resultado = reservaciones.update_one(
         {
@@ -515,7 +522,7 @@ def reservar():
 
     return render_template(
     "reservar.html",
-    fecha_minima=date.today().isoformat(),
+    fecha_minima=hora_cancun().date().isoformat(),
     mesas=MESAS,
     horarios=HORARIOS_RESERVA
     )
@@ -716,8 +723,9 @@ def crear_reservacion():
         return respuesta_error("La fecha seleccionada no es válida.")
 
 
-    ahora = datetime.now()
+    ahora = hora_cancun().replace(tzinfo=None)
     ahora_utc = hora_utc()
+    
     if fecha_hora <= ahora:
         return respuesta_error("Selecciona un horario futuro.")
 
@@ -764,7 +772,7 @@ def crear_reservacion():
             "ubicacion": mesa["ubicacion"],
             "horario": horario_inicio,
             "estado": "En espera",
-            "fecha_registro": ahora,
+            "fecha_registro": ahora_utc,
             "expires_at": ahora_utc + timedelta(seconds=TIEMPO_APARTADO)
         }
 
