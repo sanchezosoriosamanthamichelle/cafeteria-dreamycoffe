@@ -11,6 +11,9 @@ from zoneinfo import ZoneInfo
 from flask import jsonify
 import uuid
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 app = Flask(__name__)
