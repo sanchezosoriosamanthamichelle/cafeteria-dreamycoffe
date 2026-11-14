@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+
+<div class="qr-reserva-container">
+
+    <div class="qr-reserva-card">
+
+        <h1>Tu código QR</h1>
+        <p>Guarda este código y preséntalo cuando llegues a Dreamy Coffee.</p>
+
+        <div class="qr-imagen">
+            <img
+                src="{{ url_for('imagen_qr_reserva', id=reserva['_id']) }}"
+                alt="Código QR de la reservación"
+            >
+        </div>
+
+        <h2>{{ reserva.folio }}</h2>
+
+        <button type="button" onclick="window.print()">
+            Descargar código QR en PDF
+        </button>
+
+        <a href="{{ url_for('inicio') }}">Volver al inicio</a>
+
+    </div>
+
+</div>
+
+<style>
+.qr-reserva-container {
+    display: flex;
+    justify-content: center;
+    padding: 35px 15px;
+}
+
+.qr-reserva-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 30px;
+    text-align: center;
+    background: #fffaf6;
+    border-radius: 18px;
+    box-shadow: 0 4px 18px rgba(73, 48, 39, 0.12);
+    color: #493027;
+}
+
+.qr-reserva-card h1 {
+    color: #68483b;
+}
+
+.qr-imagen {
+    margin: 25px auto;
+}
+
+.qr-imagen img {
+    width: 230px;
+    max-width: 100%;
+    height: auto;
+}
+
+.qr-reserva-card button {
+    display: block;
+    width: 100%;
+    margin: 20px 0 12px;
+    padding: 13px;
+    border: none;
+    border-radius: 9px;
+    background: #68483b;
+    color: white;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.qr-reserva-card a {
+    color: #68483b;
+    text-decoration: none;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .qr-reserva-card,
+    .qr-reserva-card * {
+        visibility: visible;
+    }
+
+    .qr-reserva-card {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        box-shadow: none;
+    }
+
+    .qr-reserva-card button,
+    .qr-reserva-card a {
+        display: none;
+    }
+}
+</style>
+
+{% endblock %}

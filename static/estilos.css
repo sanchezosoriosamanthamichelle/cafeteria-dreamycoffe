@@ -981,37 +981,6 @@ h4 {
     color: #ffffff;
 }
 
-/* LIBRO DEL MENÚ */
-.carta-menu {
-    width: 100%;
-    padding: 35px 15px;
-    perspective: 1800px;
-}
-
-/* CUBIERTA DEL LIBRO */
-.libro-menu {
-    width: 90%;
-    max-width: 850px;
-    margin: 0 auto;
-    padding: 12px;
-    border-radius: 8px 18px 18px 8px;
-    background: #D9C1AC;
-    box-shadow: 0 18px 40px rgba(73, 48, 39, 0.18);
-}
-
-/* PÁGINA */
-.pagina-menu {
-    position: relative;
-    min-height: 570px;
-    padding: 45px 55px 25px;
-    overflow: hidden;
-    border: 1px solid #E5D8C5;
-    border-radius: 3px 12px 12px 3px;
-    background:
-        linear-gradient(90deg, #E8DCCB 0%, #FFFAF0 4%, #FFFAF0 100%);
-    box-shadow: inset 8px 0 12px rgba(73, 48, 39, 0.08);
-}
-
 /* ENCABEZADO */
 .carta-encabezado {
     text-align: center;
@@ -1043,11 +1012,6 @@ h4 {
     height: 1px;
     background: #B8A48B;
     margin: 22px auto 0;
-}
-
-/* LISTA DE PRODUCTOS */
-.lista-menu {
-    min-height: 290px;
 }
 
 .producto-menu {
@@ -1085,6 +1049,49 @@ h4 {
     color: #a98569;
 }
 
+/* CONTENEDOR DEL MENÚ */
+.carta-menu {
+    width: 100%;
+    padding: 35px 15px;
+}
+
+/* TARJETA PRINCIPAL */
+.carta-menu {
+    background: #FFFAF6;
+    max-width: 850px;
+    width: 90%;
+    margin: 35px auto;
+    padding: 40px 45px;
+    border-radius: 18px;
+    border: 1px solid #EADBD0;
+    box-shadow: 0 12px 35px rgba(73, 48, 39, 0.10);
+}
+
+/* LISTA DE PRODUCTOS */
+.lista-menu {
+    width: 100%;
+    max-width: 650px;
+    margin: 0 auto;
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+    .carta-menu {
+        width: 95%;
+        padding: 28px 20px;
+        margin: 20px auto;
+    }
+
+    .carta-encabezado h1 {
+        font-size: 44px;
+    }
+
+    .producto-titulo h2 {
+        font-size: 14px;
+    }
+}
+
+/* IMÁGENES DE PRODUCTOS */
 .producto-imagen {
     display: block;
     width: 80%;
@@ -1094,81 +1101,7 @@ h4 {
     border-radius: 11px;
 }
 
-/* CONTROLES DEL LIBRO */
-.controles-libro {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    margin-top: 25px;
-    padding-top: 18px;
-    border-top: 1px solid #4a3415;
-}
-
-.controles-libro button {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 20px;
-    background: transparent;
-    color: #804B58;
-    font-family: "Poppins", sans-serif;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-}
-
-.controles-libro button:hover:not(:disabled) {
-    background: #F0E2D6;
-    color: #493027;
-}
-
-.controles-libro button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.controles-libro span {
-    color: #A16D76;
-    font-family: "Poppins", sans-serif;
-    font-size: 12px;
-    letter-spacing: 2px;
-}
-
-/* ANIMACIÓN DE PÁGINA */
-.efecto-hoja {
-    position: absolute;
-    z-index: 5;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0;
-    transform-origin: left center;
-    background: linear-gradient(
-        90deg,
-        #E9DCCB,
-        #FFFAF0 40%,
-        #E6D6C5
-    );
-    box-shadow: 5px 0 18px rgba(73, 48, 39, 0.15);
-}
-
-.efecto-hoja.volteando {
-    animation: voltearHoja 0.75s ease-in-out;
-}
-
-@keyframes voltearHoja {
-    0% {
-        opacity: 0;
-        transform: rotateY(0deg);
-    }
-    15% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-        transform: rotateY(-180deg);
-    }
-}
-
+/* ANIMACIÓN DE PRODUCTOS */
 @keyframes aparecerProducto {
     from {
         opacity: 0;
@@ -1186,14 +1119,8 @@ h4 {
         padding: 20px 5px;
     }
 
-    .libro-menu {
-        width: 100%;
-        padding: 7px;
-    }
-
-    .pagina-menu {
-        min-height: 520px;
-        padding: 30px 20px 20px;
+    .lista-menu {
+        width: 95%;
     }
 
     .carta-encabezado h1 {
@@ -1202,10 +1129,6 @@ h4 {
 
     .producto-titulo h2 {
         font-size: 14px;
-    }
-
-    .controles-libro button {
-        font-size: 11px;
     }
 }
 

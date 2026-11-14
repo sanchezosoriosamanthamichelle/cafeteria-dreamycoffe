@@ -87,11 +87,10 @@
 
         <div class="recibo-acciones">
             
-            <button type="button"
-            class="btn-pdf-reserva"
-            onclick="window.print()">
-            ↓ Guardar recibo en PDF
-            </button>
+            <a href="{{ url_for('generar_qr_reserva', id=reserva['_id']) }}"
+            class="btn-pdf-reserva">
+            Generar código QR
+            </a>
             
             <button type="button"
             id="btn-finalizar-reserva"

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+
+<div class="reserva-publica-container">
+
+    <div class="reserva-publica-card">
+
+        <div class="reserva-publica-icono">☕</div>
+
+        <h1>Dreamy Coffee</h1>
+        <h2>Reservación confirmada</h2>
+
+        <p>¡Te esperamos! Estos son los detalles de tu reservación.</p>
+
+        <div class="reserva-publica-folio">
+            {{ reserva.folio }}
+        </div>
+
+        <div class="reserva-publica-detalles">
+
+            <p>
+                <strong>Fecha:</strong>
+                {{ reserva.fecha_hora.strftime("%d/%m/%Y") }}
+            </p>
+
+            <p>
+                <strong>Horario:</strong>
+                {{ reserva.horario }}
+            </p>
+
+            <p>
+                <strong>Mesa:</strong>
+                {{ reserva.mesa }}
+            </p>
+
+            <p>
+                <strong>Ubicación:</strong>
+                {{ reserva.ubicacion }}
+            </p>
+
+            <p>
+                <strong>Duración:</strong>
+                {{ reserva.duracion_minutos }} minutos
+            </p>
+
+            <p>
+                <strong>Estado:</strong>
+                Confirmada
+            </p>
+
+        </div>
+
+        <p class="reserva-publica-mensaje">
+            Gracias por elegir Dreamy Coffee. ¡Será un placer recibirte!
+        </p>
+
+    </div>
+
+</div>
+
+<style>
+.reserva-publica-container {
+    display: flex;
+    justify-content: center;
+    padding: 35px 15px;
+}
+
+.reserva-publica-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 30px;
+    text-align: center;
+    background: #fffaf6;
+    border-radius: 18px;
+    box-shadow: 0 4px 18px rgba(73, 48, 39, 0.12);
+    color: #493027;
+}
+
+.reserva-publica-icono {
+    font-size: 42px;
+}
+
+.reserva-publica-card h1 {
+    color: #68483b;
+    margin-bottom: 5px;
+}
+
+.reserva-publica-card h2 {
+    color: #92766a;
+}
+
+.reserva-publica-folio {
+    margin: 25px 0;
+    padding: 14px;
+    background: #f4d5d0;
+    border-radius: 10px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.reserva-publica-detalles {
+    padding: 15px;
+    text-align: left;
+    background: #fff0e5;
+    border-radius: 10px;
+}
+
+.reserva-publica-detalles p {
+    margin: 12px 0;
+}
+
+.reserva-publica-mensaje {
+    margin-top: 25px;
+    color: #92766a;
+}
+</style>
+
+{% endblock %}

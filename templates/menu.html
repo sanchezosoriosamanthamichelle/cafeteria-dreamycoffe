@@ -3,155 +3,35 @@
 
 {% block contenido %}
 <section class="carta-menu">
+    <header class="carta-encabezado">
+        <p class="carta-subtitulo">DREAMY COFFEE</p>
+        <h1>Menú</h1>
+        <p>Cafés y bebidas</p>
+        <div class="linea-menu"></div>
+    </header>
 
-    <div class="libro-menu">
+    <div class="lista-menu">
+        {% if alumnos %}
+            {% for producto in alumnos %}
+                <article class="producto-menu">
+                    <div class="producto-titulo">
+                        <h2>{{ producto.nombre }}</h2>
+                        <span>
+                            {% if producto.precio is defined and producto.precio != none %}
+                                ${{ producto.precio }}
+                            {% else %}
+                                Precio por definir
+                            {% endif %}
+                        </span>
+                    </div>
 
-        <div class="pagina-menu" id="paginaMenu">
-
-            <header class="carta-encabezado">
-                <p class="carta-subtitulo">DREAMY COFFEE</p>
-                <h1>Menú</h1>
-                <p id="nombreCategoria">Cafés y bebidas</p>
-                <div class="linea-menu"></div>
-            </header>
-
-            <div class="lista-menu" id="listaMenu">
-                {% if alumnos %}
-                    {% for producto in alumnos %}
-                        <article class="producto-menu"
-                                 data-categoria="{{ producto.categoria or '' }}">
-
-                            <div class="producto-titulo">
-                                <h2>{{ producto.nombre }}</h2>
-                                <span>
-                                    {% if producto.precio is defined and producto.precio != none %}
-                                        ${{ producto.precio }}
-                                    {% else %}
-                                        Precio por definir
-                                    {% endif %}
-                                </span>
-                            </div>
-
-                            <p>{{ producto.descripcion or producto.categoria }}</p>
-                        </article>
-                    {% endfor %}
-                {% else %}
-                    <p>Pronto tendremos productos deliciosos.</p>
-                {% endif %}
-            </div>
-
-            <div class="controles-libro">
-                <button type="button" id="anteriorPagina">
-                    ← Anterior
-                </button>
-
-                <span id="numeroPagina">01 / 04</span>
-
-                <button type="button" id="siguientePagina">
-                    Siguiente →
-                </button>
-            </div>
-
-            <div class="efecto-hoja" id="efectoHoja"></div>
-
-        </div>
+                    <p>{{ producto.descripcion or producto.categoria }}</p>
+                </article>
+            {% endfor %}
+        {% else %}
+            <p>Pronto tendremos bebidas deliciosas en nuestro menú.</p>
+        {% endif %}
     </div>
 
 </section>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    const productos = document.querySelectorAll(".producto-menu");
-    const nombreCategoria = document.getElementById("nombreCategoria");
-    const numeroPagina = document.getElementById("numeroPagina");
-    const anterior = document.getElementById("anteriorPagina");
-    const siguiente = document.getElementById("siguientePagina");
-    const pagina = document.getElementById("paginaMenu");
-    const hoja = document.getElementById("efectoHoja");
-
-    const categorias = [
-        { nombre: "Cafés", filtro: "cafe" },
-        { nombre: "Tés y matcha", filtro: "tes" },
-        { nombre: "Postres", filtro: "postres" },
-    ];
-
-    let paginaActual = 0;
-    let animando = false;
-
-    function normalizar(texto) {
-        return texto.toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .trim();
-    }
-
-    function perteneceCategoria(producto, categoria) {
-        const valor = normalizar(producto.dataset.categoria || "");
-
-        if (categoria === "todos") return true;
-
-        if (categoria === "cafe") {
-            return valor.includes("cafe");
-        }
-
-        if (categoria === "tes") {
-            return valor.includes("te") ||
-                   valor.includes("matcha");
-        }
-
-        if (categoria === "postres") {
-            return valor.includes("postre") ||
-                   valor.includes("pastel") ||
-                   valor.includes("reposteria");
-        }
-
-        return false;
-    }
-
-    function mostrarPagina() {
-        const categoria = categorias[paginaActual];
-
-        nombreCategoria.textContent = categoria.nombre;
-        numeroPagina.textContent =
-            String(paginaActual + 1).padStart(2, "0") + " / 03";
-
-        productos.forEach(producto => {
-            producto.style.display =
-                perteneceCategoria(producto, categoria.filtro)
-                ? "block"
-                : "none";
-        });
-
-        anterior.disabled = paginaActual === 0;
-        siguiente.disabled = paginaActual === categorias.length - 1;
-    }
-
-    function cambiarPagina(direccion) {
-        if (animando) return;
-
-        const nuevoIndice = paginaActual + direccion;
-
-        if (nuevoIndice < 0 || nuevoIndice >= categorias.length) return;
-
-        animando = true;
-        hoja.classList.add("volteando");
-
-        setTimeout(() => {
-            paginaActual = nuevoIndice;
-            mostrarPagina();
-        }, 350);
-
-        setTimeout(() => {
-            hoja.classList.remove("volteando");
-            animando = false;
-        }, 750);
-    }
-
-    anterior.addEventListener("click", () => cambiarPagina(-1));
-    siguiente.addEventListener("click", () => cambiarPagina(1));
-
-    mostrarPagina();
-});
-</script>
 {% endblock %}

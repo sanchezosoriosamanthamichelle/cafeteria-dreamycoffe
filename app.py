@@ -1,4 +1,9 @@
 import os
+import uuid
+import secrets
+import qrcode
+from io import BytesIO
+from flask import send_file
 from flask import ( Flask, render_template, request, redirect,url_for, abort, session, flash)
 from functools import wraps
 from werkzeug.security import check_password_hash
@@ -9,7 +14,6 @@ from datetime import datetime, timedelta, timezone
 from datetime import date
 from zoneinfo import ZoneInfo
 from flask import jsonify
-import uuid
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
@@ -763,10 +767,16 @@ def crear_reservacion():
                 "Esta mesa ya está reservada para el horario seleccionado.",
                 409
             )
+        # Generar un folio único para la reservació
+        while True:
+            folio = f"DC-{hora_cancun().year}-{secrets.token_hex(3).upper()}"
+            if reservaciones.find_one({"folio": folio}) is None:
+                break 
 
         nueva_reservacion = {
             "nombre": nombre,
             "telefono": telefono,
+            "folio": folio,
             "cliente_id": cliente_id,
             "fecha_hora": fecha_hora,
             "fecha_final": fecha_final,
@@ -799,6 +809,7 @@ def crear_reservacion():
             "ok": True,
             "mensaje": "Tu mesa está apartada temporalmente.",
             "id": str(nueva_reservacion["_id"]),
+            "folio": nueva_reservacion["folio"],
             "mesa": mesa_numero,
             "ubicacion": mesa["ubicacion"],
             "fecha": fecha,
@@ -808,8 +819,7 @@ def crear_reservacion():
             "segundos_restantes": TIEMPO_APARTADO
         }), 201
 
-    # Mantener el funcionamiento anterior de formularios tradicionales
-    nueva_reservacion["folio"] = str(nueva_reservacion["_id"])
+
 
     return render_template(
         "confirmacion_reserva.html",
@@ -870,7 +880,6 @@ def confirmar_reservacion(id):
         if reserva is None:
             abort(404)
 
-        reserva["folio"] = str(reserva["_id"])
 
         if request.is_json:
             return jsonify({
@@ -925,13 +934,92 @@ def ver_recibo_reservacion(id):
     if reserva is None:
         abort(404)
 
-    reserva["folio"] = str(reserva["_id"])
 
     return render_template(
         "confirmacion_reserva.html",
         reserva=reserva
     )
 
+@app.route("/reserva/qr/<id>")
+def generar_qr_reserva(id):
+
+    if not ObjectId.is_valid(id):
+        abort(404)
+
+    cliente_id = session.get("cliente_reservas_id")
+
+    if not cliente_id:
+        abort(404)
+
+    reserva = reservaciones.find_one({
+        "_id": ObjectId(id),
+        "cliente_id": cliente_id,
+        "estado": "Confirmada"
+    })
+
+    if reserva is None:
+        abort(404)
+
+    return render_template(
+        "qr_reserva.html",
+        reserva=reserva
+    )
+    
+@app.route("/reserva/qr/imagen/<id>")
+def imagen_qr_reserva(id):
+
+    if not ObjectId.is_valid(id):
+        abort(404)
+
+    cliente_id = session.get("cliente_reservas_id")
+
+    if not cliente_id:
+        abort(404)
+
+    reserva = reservaciones.find_one({
+        "_id": ObjectId(id),
+        "cliente_id": cliente_id,
+        "estado": "Confirmada"
+    })
+
+    if reserva is None:
+        abort(404)
+
+    # Crear el enlace que contendrá el código QR
+    enlace = url_for(
+        "consulta_publica_reserva",
+        folio=reserva["folio"],
+        _external=True
+    )
+
+    # Generar la imagen QR
+    imagen = qrcode.make(enlace)
+
+    # Guardar temporalmente la imagen en memoria
+    salida = BytesIO()
+    imagen.save(salida, format="PNG")
+    salida.seek(0)
+
+    return send_file(
+        salida,
+        mimetype="image/png"
+    )
+
+@app.route("/reserva/consulta/<folio>")
+def consulta_publica_reserva(folio):
+
+    reserva = reservaciones.find_one({
+        "folio": folio,
+        "estado": "Confirmada"
+    })
+
+    if reserva is None:
+        abort(404)
+
+    return render_template(
+        "reserva_publica.html",
+        reserva=reserva
+    )
 
 @app.route("/cancelar-reservacion-cliente/<id>", methods=["POST"])
 def cancelar_reservacion_cliente(id):
