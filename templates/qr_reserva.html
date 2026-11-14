@@ -5,6 +5,11 @@
 <div class="qr-reserva-container">
 
     <div class="qr-reserva-card">
+        <button type="button"
+            id="btn-finalizar-reserva"
+            class="btn-finalizar-reserva">
+        Finalizar
+    </button>
 
         <h1>Tu código QR</h1>
         <p>Guarda este código y preséntalo cuando llegues a Dreamy Coffee.</p>
@@ -22,7 +27,11 @@
             Descargar código QR en PDF
         </button>
 
-        <a href="{{ url_for('inicio') }}">Volver al inicio</a>
+        <a href="{{ url_for('consulta_publica_reserva', folio=reserva['folio']) }}">
+            Visualizar ficha
+        </a>
+
+    
 
     </div>
 
@@ -67,16 +76,28 @@
     padding: 13px;
     border: none;
     border-radius: 9px;
-    background: #68483b;
+    background: #50403a;
     color: white;
     cursor: pointer;
     font-size: 15px;
 }
+.qr-reserva-card {
+    position: relative;
+}
 
+.qr-reserva-card .btn-finalizar-reserva {
+    display: block;
+    width: auto;
+    margin: 0 0 20px auto;
+    padding: 9px 18px;
+    background: #e9aaa9;
+    color: #493027;
+}
 .qr-reserva-card a {
     color: #68483b;
     text-decoration: none;
 }
+
 
 @media print {
     body * {
@@ -102,5 +123,16 @@
     }
 }
 </style>
+<script>
+document.getElementById("btn-finalizar-reserva")
+    .addEventListener("click", function () {
+
+        sessionStorage.removeItem("fechaReservacion");
+        sessionStorage.removeItem("nombreCliente");
+        sessionStorage.removeItem("telefonoCliente");
+
+        window.location.href = "{{ url_for('reservar') }}";
+    });
+</script>
 
 {% endblock %}
