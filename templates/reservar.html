@@ -847,11 +847,43 @@ async function crearApartado(mesa, horario, boton) {
         }
 
         mostrarMensaje(
-            "Tu mesa está apartada. Tienes 60 segundos para confirmar.",
-            "success"
-        );
+    "Tu mesa está apartada. Tienes 60 segundos para confirmar.",
+    "success"
+);
 
-        await cargarMesas();
+// Obtener la mesa y el horario que acabamos de apartar
+const mesaActual = datosMesas.find(
+    m => m.numero === mesa.numero
+);
+
+const horarioActual = mesaActual?.horarios.find(
+    h => h.inicio === horario.inicio
+);
+
+if (horarioActual && datos.expires_at) {
+
+    const vencimiento = Date.parse(datos.expires_at);
+
+    Object.assign(horarioActual, {
+        estado: "En proceso",
+        id: datos.id,
+        es_mi_apartado: true,
+        expires_at: datos.expires_at,
+        expires_at_timestamp: vencimiento
+    });
+
+    vencimientosLocales.set(datos.id, vencimiento);
+
+    // Mostrar inmediatamente el contador
+    dibujarTabla();
+
+} else {
+
+    await cargarMesas();
+}
+
+// Actualizar la disponibilidad en segundo plano
+cargarMesas();
 
     } catch (error) {
 
