@@ -62,14 +62,12 @@ Para ejecutar el proyecto Dreamy Coffee en un entorno local, sigue estos pasos:
 2. **Abrir la carpeta del proyecto.** Abrirla en Visual Studio Code o en una terminal.
 
 3. **Crear un entorno virtual.** Ejecutar el siguiente comando:
-   ```bash
+   
    python -m venv .venv
-   ```
 
 4. **Activar el entorno virtual.** En Windows PowerShell:
-   ```powershell
+
    .venv\Scripts\Activate
-   ```
 
 5. **Instalar las dependencias.** Ejecutar:
    
@@ -114,21 +112,21 @@ ADMIN_PASSWORD_HASH=
 Agregar capturas de pantalla de:
 
 - Página de inicio.
-![Pagina prinicpal antes de actualizaciones](inicio-antes.png)
-![pagina principal despues de modificar la interfaz](inicio-despues.png)
+![Pagina prinicpal antes de actualizaciones](capturas/inicio-antes.png)
+![pagina principal despues de modificar la interfaz](capturas/inicio-despues.png)
 - Menú de productos.
-![Menu de todos los productos](menu.png)
+![Menu de todos los productos](capturas/menu.png)
 - Carrito y realización de pedidos.
-![Productos agregados al carrito](carrito.png)
-![Finalizar un pedido ](finalizar-pedido.png)
+![Productos agregados al carrito](capturas/carrito.png)
+![Finalizar un pedido ](capturas/finalizar-pedido.png)
 - Panel de administración.
-![Agregar producto](admin1-1.png)
-![Productos registrados](admin2.png)
-![Pedidos registrados](admin3.png)
-![Version actual](admin-actual.png)
+![Agregar producto](capturas/admin1-1.png)
+![Productos registrados](capturas/admin2.png)
+![Pedidos registrados](capturas/admin3.png)
+![Version actual](capturas/admin-actual.png)
 
 - Proceso de apartado temporal.
-![Apartado de una mesa](reservacion.png)
-![Recibo despues de confirmar la reserva](recibo.png)
+![Apartado de una mesa](capturas/reservacion.png)
+![Recibo despues de confirmar la reserva](capturas/recibo.png)
 - Ficha pública y código QR.
-![Generacion del codigo qr despues de la reserva](qr.png)
+![Generacion del codigo qr despues de la reserva](capturas/qr.png)

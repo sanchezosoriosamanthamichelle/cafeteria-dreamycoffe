@@ -244,13 +244,13 @@ def panel_admin():
         pedidos.find().sort("fecha", -1)
     )
 
-    # Mostrar únicamente reservaciones confirmadas
+    # Mostrar reservaciones confirmadas y canceladas
     lista_reservaciones = list(
         reservaciones.find(
-            {"estado": "Confirmada"}
-        ).sort("fecha_hora", 1)
-    )
-
+            {"estado": {"$in": ["Confirmada", "Cancelada"]}}
+            ).sort("fecha_hora", 1)
+        )
+   
     return render_template(
         "admin.html",
         alumnos=lista,
@@ -1010,7 +1010,7 @@ def consulta_publica_reserva(folio):
 
     reserva = reservaciones.find_one({
         "folio": folio,
-        "estado": "Confirmada"
+        "estado": {"$in": ["Confirmada", "Cancelada"]}
     })
 
     if reserva is None:

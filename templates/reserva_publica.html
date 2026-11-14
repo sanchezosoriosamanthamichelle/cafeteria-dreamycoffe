@@ -41,14 +41,24 @@
 
             <p>
                 <strong>Duración:</strong>
-                {{ reserva.duracion_minutos }} minutos
+                {% set horas = reserva.duracion_minutos // 60 %}
+                {% set minutos = reserva.duracion_minutos % 60 %}
+                {% if horas > 0 %}
+                {{ horas }} {% if horas == 1 %}hora{% else %}horas{% endif %}
+                {% endif %}
+                {% if minutos > 0 %}
+                {{ minutos }} minutos
+                {% endif %}
             </p>
 
             <p>
                 <strong>Estado:</strong>
-                Confirmada
+                {% if reserva.estado == "Confirmada" %}
+                <span class="estado-confirmada">Confirmada</span>
+                {% elif reserva.estado == "Cancelada" %}
+                <span class="estado-cancelada">Cancelada</span>
+                {% endif %}
             </p>
-
         </div>
 
         <p class="reserva-publica-mensaje">
@@ -113,6 +123,15 @@
 .reserva-publica-mensaje {
     margin-top: 25px;
     color: #92766a;
+}
+.estado-confirmada {
+    color: #287a45;
+    font-weight: bold;
+}
+
+.estado-cancelada {
+    color: #b42332;
+    font-weight: bold;
 }
 </style>
 
