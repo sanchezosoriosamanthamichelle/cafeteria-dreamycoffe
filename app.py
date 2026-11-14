@@ -772,6 +772,8 @@ def crear_reservacion():
             folio = f"DC-{hora_cancun().year}-{secrets.token_hex(3).upper()}"
             if reservaciones.find_one({"folio": folio}) is None:
                 break 
+        # Iniciar el tiempo del apartado justo antes de guardarlo
+        ahora_utc = hora_utc()
 
         nueva_reservacion = {
             "nombre": nombre,
