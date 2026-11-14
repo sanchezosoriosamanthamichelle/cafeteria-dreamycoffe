@@ -792,6 +792,12 @@ def crear_reservacion():
         }
 
         resultado = reservaciones.insert_one(nueva_reservacion)
+        print("HORA DE CREACIÓN:", nueva_reservacion["fecha_registro"])
+        print("HORA DE VENCIMIENTO:", nueva_reservacion["expires_at"])
+        print(
+            "SEGUNDOS CONFIGURADOS:",
+            TIEMPO_APARTADO
+        )
 
         nueva_reservacion["_id"] = resultado.inserted_id
 
