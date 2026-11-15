@@ -842,6 +842,13 @@ async function crearApartado(mesa, horario, boton) {
             Math.ceil((Date.parse(datos.expires_at) - Date.now()) / 1000)
         );
 
+        console.log("HORA DEL NAVEGADOR:", new Date().toISOString());
+        console.log("VENCIMIENTO RECIBIDO:", datos.expires_at);
+        console.log(
+            "DIFERENCIA EN SEGUNDOS:",
+            (Date.parse(datos.expires_at) - Date.now()) / 1000
+        );
+
         if (!respuesta.ok || !datos.ok) {
 
             throw new Error(
