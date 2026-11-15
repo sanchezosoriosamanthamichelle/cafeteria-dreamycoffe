@@ -277,13 +277,18 @@ async function leerRespuestaJSON(respuesta) {
 }
 
 
-// --------------------------------------------------
-// CONTADOR
-// --------------------------------------------------
-
 function segundosRestantes(fechaVencimiento) {
 
-    const timestamp = Number(fechaVencimiento);
+    let timestamp;
+
+    // Aceptar fechas en formato numérico o ISO
+    if (typeof fechaVencimiento === "number") {
+        timestamp = fechaVencimiento;
+    } else if (/^\d+$/.test(String(fechaVencimiento))) {
+        timestamp = Number(fechaVencimiento);
+    } else {
+        timestamp = new Date(fechaVencimiento).getTime();
+    }
 
     if (!Number.isFinite(timestamp)) {
         return 0;
@@ -293,7 +298,6 @@ function segundosRestantes(fechaVencimiento) {
 
     return Math.max(0, Math.ceil(diferencia / 1000));
 }
-
 
 function formatoTiempo(segundos) {
 
