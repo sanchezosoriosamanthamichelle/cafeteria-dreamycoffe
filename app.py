@@ -141,21 +141,16 @@ def buscar_mesa_disponible(mesa_numero, fecha_hora, fecha_final, ahora):
     return mesa
 
 
-
 def expirar_reservaciones():
     ahora = hora_utc()
 
-    reservaciones.update_many(
+    reservaciones.delete_many(
         {
             "estado": "En espera",
             "expires_at": {"$lte": ahora}
-        },
-        {
-            "$set": {
-                "estado": "Expirada"
-            }
         }
     )
+
 
 
 def adquirir_bloqueo_reservas():
@@ -269,7 +264,7 @@ def cancelar_reservacion(id):
     resultado = reservaciones.update_one(
         {
             "_id": ObjectId(id),
-            "estado": {"$in": ["Confirmada", "En espera"]}
+            "estado": "Confirmada"
         },
         {
             "$set": {
@@ -285,6 +280,7 @@ def cancelar_reservacion(id):
         flash("No se encontró una reservación activa.", "warning")
 
     return redirect(url_for("panel_admin"))
+
 @app.route("/admin/pedido/<numero_pedido>/marcar-pagado", methods=["POST"])
 @administrador_requerido
 def marcar_pedido_pagado(numero_pedido):
@@ -1016,12 +1012,13 @@ def consulta_publica_reserva(folio):
     })
 
     if reserva is None:
-        abort(404)
+        return render_template(
+            "error.html",
+            mensaje="No encontramos ninguna reservación con ese folio. Verifica que esté escrito correctamente."
+        ), 404
 
-    return render_template(
-        "reserva_publica.html",
-        reserva=reserva
-    )
+    return render_template("reserva_publica.html", reserva=reserva)
+
 
 @app.route("/cancelar-reservacion-cliente/<id>", methods=["POST"])
 def cancelar_reservacion_cliente(id):
@@ -1048,22 +1045,16 @@ def cancelar_reservacion_cliente(id):
 
     ahora = hora_utc()
 
-    resultado = reservaciones.update_one(
+    resultado = reservaciones.delete_one(
         {
             "_id": ObjectId(id),
             "cliente_id": cliente_id,
             "estado": "En espera",
             "expires_at": {"$gt": ahora}
-        },
-        {
-            "$set": {
-                "estado": "Cancelada",
-                "fecha_cancelacion": ahora
-            }
         }
     )
 
-    if resultado.modified_count == 1:
+    if resultado.deleted_count == 1:
 
         mensaje = "Tu apartado fue cancelado. La mesa está disponible."
 
@@ -1088,6 +1079,7 @@ def cancelar_reservacion_cliente(id):
         flash(mensaje, "warning")
 
     return redirect(url_for("reservar"))
+
 
 @app.route("/ayuda")
 def ayuda():
