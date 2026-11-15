@@ -1002,7 +1002,51 @@ def imagen_qr_reserva(id):
         salida,
         mimetype="image/png"
     )
+    
+@app.route("/reserva/qr/publico/<folio>")
+def imagen_qr_publico_reserva(folio):
 
+    reserva = reservaciones.find_one({
+    "folio": folio,
+    "estado": {"$in": ["Confirmada", "Cancelada"]}
+    })
+
+    if reserva is None:
+        abort(404)
+
+    enlace = url_for(
+        "consulta_publica_reserva",
+        folio=reserva["folio"],
+        _external=True
+    )
+
+    imagen = qrcode.make(enlace)
+
+    salida = BytesIO()
+    imagen.save(salida, format="PNG")
+    salida.seek(0)
+
+    return send_file(salida, mimetype="image/png")
+
+
+@app.route("/reserva/qr/visualizar/<folio>")
+def pagina_qr_publico_reserva(folio):
+
+    reserva = reservaciones.find_one({
+        "folio": folio,
+        "estado": {"$in": ["Confirmada", "Cancelada"]}
+    })
+
+    if reserva is None:
+        abort(404)
+
+    return render_template(
+        "qr_reserva.html",
+        reserva=reserva,
+        recuperacion_publica=True
+    )
+    
+    
 @app.route("/reserva/consulta/<folio>")
 def consulta_publica_reserva(folio):
 
@@ -1081,10 +1125,54 @@ def cancelar_reservacion_cliente(id):
     return redirect(url_for("reservar"))
 
 
-@app.route("/ayuda")
+
+@app.route("/ayuda", methods=["GET", "POST"])
 def ayuda():
+
     fecha = datetime.now().strftime("%d/%m/%Y")
-    return render_template("ayuda.html", fecha=fecha)
+
+    reservas_recuperadas = []
+    mensaje_recuperacion = None
+
+    if request.method == "POST":
+
+        nombre = request.form.get("nombre", "").strip()
+        telefono = request.form.get("telefono", "").strip()
+
+        # Validar los datos ingresados
+        if not nombre or not telefono:
+            mensaje_recuperacion = "Completa tu nombre y teléfono."
+
+        elif not telefono.isdigit() or not 10 <= len(telefono) <= 15:
+            mensaje_recuperacion = "Ingresa un número de teléfono válido."
+
+        else:
+            # Buscar reservaciones confirmadas con ese teléfono
+            reservas_telefono = reservaciones.find({
+                "telefono": telefono,
+                "estado": "Confirmada"
+            }).sort("fecha_hora", -1)
+
+            # Comprobar también que coincida el nombre
+            reservas_recuperadas = [
+                reserva for reserva in reservas_telefono
+                if reserva.get("nombre", "").strip().casefold()
+                == nombre.casefold()
+            ]
+
+            if not reservas_recuperadas:
+                mensaje_recuperacion = (
+                    "No encontramos reservaciones confirmadas "
+                    "con esos datos. Verifica tu nombre y teléfono."
+                )
+
+    return render_template(
+        "ayuda.html",
+        fecha=fecha,
+        reservas_recuperadas=reservas_recuperadas,
+        mensaje_recuperacion=mensaje_recuperacion
+    )
+
 
 def producto_json (producto):
     return {

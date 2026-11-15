@@ -1,38 +1,57 @@
+
 {% extends "base.html" %}
 
 {% block contenido %}
 
+{% if recuperacion_publica %}
+    {% set qr_url = url_for('imagen_qr_publico_reserva', folio=reserva.folio) %}
+{% else %}
+    {% set qr_url = url_for('imagen_qr_reserva', id=reserva['_id']) %}
+{% endif %}
+
 <div class="qr-reserva-container">
 
     <div class="qr-reserva-card">
+
+        {% if not recuperacion_publica %}
         <button type="button"
-            id="btn-finalizar-reserva"
-            class="btn-finalizar-reserva">
-        Finalizar
-    </button>
+                id="btn-finalizar-reserva"
+                class="btn-finalizar-reserva">
+            Finalizar
+        </button>
+        {% endif %}
 
         <h1>Tu código QR</h1>
-        <p>Guarda este código y preséntalo cuando llegues a Dreamy Coffee.</p>
+
+        <p>Guarda este código para consultar tu reservación.</p>
 
         <div class="qr-imagen">
             <img
-                src="{{ url_for('imagen_qr_reserva', id=reserva['_id']) }}"
+                src="{{ qr_url }}"
                 alt="Código QR de la reservación"
             >
         </div>
 
         <h2>{{ reserva.folio }}</h2>
 
-        <button type="button" onclick="window.print()">
-            Descargar código QR en PDF
-        </button>
+<a class="qr-btn"
+   href="{{ url_for('consulta_publica_reserva', folio=reserva.folio) }}">
+    Visualizar ficha
+</a>
 
-        <a href="{{ url_for('consulta_publica_reserva', folio=reserva['folio']) }}">
-            Visualizar ficha
-        </a>
+<a class="qr-btn qr-btn-descargar"
+   href="{{ qr_url }}"
+   download="Dreamy-Coffee-{{ reserva.folio }}.png">
+    Descargar QR
+</a>
 
-    
+{% if recuperacion_publica %}
+    <div class="qr-separador"></div>
 
+    <a href="{{ url_for('ayuda') }}" class="qr-enlace-volver">
+        ← Volver a Ayuda
+    </a>
+{% endif %}
     </div>
 
 </div>
@@ -45,6 +64,7 @@
 }
 
 .qr-reserva-card {
+    position: relative;
     width: 100%;
     max-width: 480px;
     padding: 30px;
@@ -69,20 +89,38 @@
     height: auto;
 }
 
-.qr-reserva-card button {
+.qr-reserva-card h2 {
+    margin-bottom: 22px;
+    color: #68483b;
+    letter-spacing: 2px;
+}
+
+.qr-btn {
     display: block;
     width: 100%;
-    margin: 20px 0 12px;
+    margin: 12px 0;
     padding: 13px;
-    border: none;
     border-radius: 9px;
     background: #50403a;
-    color: white;
+    color: white !important;
+    text-decoration: none;
     cursor: pointer;
     font-size: 15px;
+    box-sizing: border-box;
 }
-.qr-reserva-card {
-    position: relative;
+
+/* Hover del botón Visualizar ficha */
+.qr-btn:not(.qr-btn-descargar):hover {
+    background: #493027;
+}
+
+/* Hover del botón Descargar QR */
+.qr-btn-descargar:hover {
+    background: #d19982;
+}
+.qr-btn-descargar {
+    background: #edcbcb;
+    color: #382822 !important;
 }
 
 .qr-reserva-card .btn-finalizar-reserva {
@@ -90,14 +128,12 @@
     width: auto;
     margin: 0 0 20px auto;
     padding: 9px 18px;
+    border: none;
+    border-radius: 9px;
     background: #e9aaa9;
     color: #493027;
+    cursor: pointer;
 }
-.qr-reserva-card a {
-    color: #68483b;
-    text-decoration: none;
-}
-
 
 @media print {
     body * {
@@ -117,22 +153,51 @@
         box-shadow: none;
     }
 
-    .qr-reserva-card button,
-    .qr-reserva-card a {
+    .qr-reserva-card a,
+    .qr-reserva-card button {
         display: none;
     }
 }
-</style>
-<script>
-document.getElementById("btn-finalizar-reserva")
-    .addEventListener("click", function () {
 
+
+.qr-btn-volver:hover {
+    background: #f5e3d6;
+    color: #493027;
+    border-color: #d8b9aa;
+}
+.qr-separador {
+    width: 85%;
+    height: 1px;
+    margin: 25px auto 15px;
+    background: #e9d8cf;
+}
+
+.qr-enlace-volver {
+    display: inline-block;
+    color: #92766a;
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.25s ease;
+}
+
+.qr-enlace-volver:hover {
+    color: #493027;
+    text-decoration: underline;
+}
+</style>
+
+<script>
+const botonFinalizar = document.getElementById("btn-finalizar-reserva");
+
+if (botonFinalizar) {
+    botonFinalizar.addEventListener("click", function () {
         sessionStorage.removeItem("fechaReservacion");
         sessionStorage.removeItem("nombreCliente");
         sessionStorage.removeItem("telefonoCliente");
 
         window.location.href = "{{ url_for('reservar') }}";
     });
+}
 </script>
 
 {% endblock %}

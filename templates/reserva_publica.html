@@ -1,15 +1,21 @@
+
 {% extends "base.html" %}
 
 {% block contenido %}
 
 <div class="reserva-publica-container">
-
     <div class="reserva-publica-card">
-
         <div class="reserva-publica-icono">☕</div>
 
         <h1>Dreamy Coffee</h1>
-        <h2>Reservación confirmada</h2>
+
+        <h2>
+            {% if reserva.estado == "Confirmada" %}
+                Reservación confirmada
+            {% elif reserva.estado == "Cancelada" %}
+                Reservación cancelada
+            {% endif %}
+        </h2>
 
         <p>¡Te esperamos! Estos son los detalles de tu reservación.</p>
 
@@ -18,7 +24,6 @@
         </div>
 
         <div class="reserva-publica-detalles">
-
             <p>
                 <strong>Fecha:</strong>
                 {{ reserva.fecha_hora.strftime("%d/%m/%Y") }}
@@ -43,20 +48,22 @@
                 <strong>Duración:</strong>
                 {% set horas = reserva.duracion_minutos // 60 %}
                 {% set minutos = reserva.duracion_minutos % 60 %}
+
                 {% if horas > 0 %}
-                {{ horas }} {% if horas == 1 %}hora{% else %}horas{% endif %}
+                    {{ horas }} {% if horas == 1 %}hora{% else %}horas{% endif %}
                 {% endif %}
+
                 {% if minutos > 0 %}
-                {{ minutos }} minutos
+                    {{ minutos }} minutos
                 {% endif %}
             </p>
 
             <p>
                 <strong>Estado:</strong>
                 {% if reserva.estado == "Confirmada" %}
-                <span class="estado-confirmada">Confirmada</span>
+                    <span class="estado-confirmada">Confirmada</span>
                 {% elif reserva.estado == "Cancelada" %}
-                <span class="estado-cancelada">Cancelada</span>
+                    <span class="estado-cancelada">Cancelada</span>
                 {% endif %}
             </p>
         </div>
@@ -65,17 +72,24 @@
             Gracias por elegir Dreamy Coffee. ¡Será un placer recibirte!
         </p>
 
-    </div>
+        <div class="reserva-separador"></div>
+        <a href="{{ url_for('pagina_qr_publico_reserva', folio=reserva.folio) }}"
+        class="reserva-enlace-volver">
+        ← Volver a mi QR
+        </a>
 
+    </div>
 </div>
 
 <style>
+/* CONTENEDOR PRINCIPAL */
 .reserva-publica-container {
     display: flex;
     justify-content: center;
     padding: 35px 15px;
 }
 
+/* TARJETA DE RESERVACIÓN */
 .reserva-publica-card {
     width: 100%;
     max-width: 480px;
@@ -100,6 +114,7 @@
     color: #92766a;
 }
 
+/* FOLIO DE RESERVACIÓN */
 .reserva-publica-folio {
     margin: 25px 0;
     padding: 14px;
@@ -109,6 +124,7 @@
     letter-spacing: 2px;
 }
 
+/* DETALLES DE LA RESERVACIÓN */
 .reserva-publica-detalles {
     padding: 15px;
     text-align: left;
@@ -124,6 +140,8 @@
     margin-top: 25px;
     color: #92766a;
 }
+
+/* ESTADOS DE LA RESERVACIÓN */
 .estado-confirmada {
     color: #287a45;
     font-weight: bold;
@@ -132,6 +150,60 @@
 .estado-cancelada {
     color: #b42332;
     font-weight: bold;
+}
+
+/* CÓDIGO QR DE LA RESERVACIÓN */
+.reserva-qr-publico {
+    margin-top: 25px;
+    padding: 22px 15px;
+    border: 1px solid #ead8d0;
+    border-radius: 14px;
+    background: #fff0e5;
+}
+
+.reserva-qr-publico h3 {
+    margin: 0 0 10px;
+    color: #68483b;
+    font-family: "Playfair Display", serif;
+    font-size: 1.25rem;
+}
+
+.reserva-qr-publico p {
+    margin: 0 0 18px;
+    color: #92766a;
+    font-size: .88rem;
+    line-height: 1.5;
+}
+
+.reserva-qr-imagen {
+    display: block;
+    width: 190px;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    padding: 10px;
+    border: 1px solid #ead8d0;
+    border-radius: 12px;
+    background: #ffffff;
+}
+.reserva-separador {
+    width: 85%;
+    height: 1px;
+    margin: 25px auto 15px;
+    background: #e9d8cf;
+}
+
+.reserva-enlace-volver {
+    display: inline-block;
+    color: #92766a;
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.25s ease;
+}
+
+.reserva-enlace-volver:hover {
+    color: #493027;
+    text-decoration: underline;
 }
 </style>
 

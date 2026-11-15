@@ -101,8 +101,230 @@
             </details>
         </div>
     </div>
+<!-- RECUPERAR RESERVACIÓN -->
+<div class="help-card">
 
+    <div class="help-card-heading">
+        <span class="help-icon">♡</span>
+        <div>
+            <h2>¿Olvidaste tu folio?</h2>
+            <p>Te ayudamos a recuperar tu reservación.</p>
+        </div>
+    </div>
 
+    <form action="{{ url_for('ayuda') }}" method="POST" class="help-recovery-form">
+
+        <div>
+            <label for="nombre-recuperacion">Nombre del cliente</label>
+            <input
+                type="text"
+                id="nombre-recuperacion"
+                name="nombre"
+                placeholder="Escribe tu nombre"
+                maxlength="100"
+                required
+            >
+        </div>
+
+        <div>
+            <label for="telefono-recuperacion">Teléfono registrado</label>
+            <input
+                type="tel"
+                id="telefono-recuperacion"
+                name="telefono"
+                placeholder="Escribe tu teléfono"
+                pattern="[0-9]{10,15}"
+                maxlength="15"
+                required
+            >
+        </div>
+
+        <button type="submit">
+            Buscar mi reservación
+        </button>
+
+    </form>
+
+    <!-- MENSAJE DE RECUPERACIÓN -->
+    {% if mensaje_recuperacion %}
+        <div class="help-recovery-message">
+            {{ mensaje_recuperacion }}
+        </div>
+    {% endif %}
+
+    <!-- RESULTADOS DE LA BÚSQUEDA -->
+    {% if reservas_recuperadas %}
+        <div class="help-recovery-results" id="resultados-recuperacion">
+
+            <h3>¡Encontramos tu reservación!</h3>
+            <p>Tu reservación está disponible para consultar.</p>
+
+            {% for reserva in reservas_recuperadas %}
+                <div class="help-recovery-result">
+
+                    <p>
+                        <strong>Folio:</strong>
+                        {{ reserva.folio }}
+                    </p>
+
+                    <a href="{{ url_for('pagina_qr_publico_reserva', folio=reserva.folio) }}"
+                    onclick="document.getElementById('resultados-recuperacion').remove();">
+                    Visualizar mi QR
+                    </a>
+
+                </div>
+            {% endfor %}
+
+        </div>
+    {% endif %}
+
+</div>
 </section>
+<style>
+/* =========================================
+   RECUPERACIÓN DE RESERVACIONES
+   ========================================= */
+
+.help-recovery-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.help-recovery-form > div {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.help-recovery-form label {
+    color: #492B30;
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+.help-recovery-form input {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1px solid #EAD8D0;
+    border-radius: 10px;
+    background: #FFFFFF;
+    color: #493027;
+    font-family: inherit;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    box-sizing: border-box;
+}
+
+.help-recovery-form input:focus {
+    border-color: #A56F78;
+    box-shadow: 0 0 0 3px rgba(165, 111, 120, .12);
+}
+
+.help-recovery-form input::placeholder {
+    color: #a06d57;
+}
+
+.help-recovery-form button {
+    align-self: flex-start;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 10px;
+    background: #492B30;
+    color: #FFF9F3;
+    font-family: inherit;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, transform .2s;
+}
+
+.help-recovery-form button:hover {
+    background: #A56F78;
+    transform: translateY(-2px);
+}
+
+/* MENSAJES */
+
+.help-recovery-message {
+    margin-top: 18px;
+    padding: 13px 16px;
+    border: 1px solid #EAD8D0;
+    border-radius: 10px;
+    background: #F4E1DF;
+    color: #492B30;
+    font-size: .88rem;
+    line-height: 1.5;
+}
+
+/* RESULTADOS */
+
+.help-recovery-results {
+    margin-top: 25px;
+    padding-top: 22px;
+    border-top: 1px solid #EAD8D0;
+}
+
+.help-recovery-results h3 {
+    margin: 0 0 8px;
+    color: #492B30;
+    font-family: "Playfair Display", serif;
+    font-size: 1.2rem;
+}
+
+.help-recovery-results > p {
+    margin-bottom: 18px;
+    color: #92766A;
+    font-size: .88rem;
+}
+
+.help-recovery-result {
+    margin-top: 15px;
+    padding: 18px;
+    border: 1px solid #EAD8D0;
+    border-radius: 14px;
+    background: #FFFFFF;
+}
+
+.help-recovery-result p {
+    margin: 7px 0;
+    color: #806D65;
+    font-size: .88rem;
+}
+
+.help-recovery-result strong {
+    color: #492B30;
+}
+
+.help-recovery-result a {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #F4E1DF;
+    color: #492B30;
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .2s;
+}
+
+.help-recovery-result a:hover {
+    background: #EAD8D0;
+}
+
+/* DISEÑO PARA CELULARES */
+
+@media (max-width: 600px) {
+    .help-recovery-form button {
+        width: 100%;
+    }
+
+    .help-recovery-result {
+        padding: 15px;
+    }
+}
+</style>
 
 {% endblock %}
