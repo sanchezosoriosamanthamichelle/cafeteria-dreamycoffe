@@ -1150,7 +1150,7 @@ def ayuda():
             # Buscar reservaciones confirmadas con ese teléfono
             reservas_telefono = reservaciones.find({
                 "telefono": telefono,
-                "estado": "Confirmada"
+                "estado": {"$in": ["Confirmada", "Cancelada"]}
             }).sort("fecha_hora", -1)
 
             # Comprobar también que coincida el nombre
@@ -1162,8 +1162,8 @@ def ayuda():
 
             if not reservas_recuperadas:
                 mensaje_recuperacion = (
-                    "No encontramos reservaciones confirmadas "
-                    "con esos datos. Verifica tu nombre y teléfono."
+                    "No encontramos reservaciones con esos datos. "
+                    "Verifica tu nombre y teléfono."
                 )
 
     return render_template(
