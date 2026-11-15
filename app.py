@@ -651,7 +651,7 @@ def api_reservaciones():
 
 @app.route("/crear-reservacion", methods=["POST"])
 def crear_reservacion():
-    print("========== ENTRE A CREAR_RESERVACION ==========", flush=True)
+
     # Detectar si la solicitud viene de la nueva tabla
     es_api = request.is_json
 
@@ -792,10 +792,7 @@ def crear_reservacion():
         }
 
         resultado = reservaciones.insert_one(nueva_reservacion)
-        print("HORA DE CREACIÓN:", nueva_reservacion["fecha_registro"], flush=True)
-        print("HORA DE VENCIMIENTO:", nueva_reservacion["expires_at"], flush=True)
-        print("SEGUNDOS CONFIGURADOS:", TIEMPO_APARTADO, flush=True)
-
+    
         nueva_reservacion["_id"] = resultado.inserted_id
 
     finally:

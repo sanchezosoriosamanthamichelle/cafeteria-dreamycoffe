@@ -836,18 +836,7 @@ async function crearApartado(mesa, horario, boton) {
         });
 
         const datos = await leerRespuestaJSON(respuesta);
-        console.log("RESPUESTA DE RENDER:", datos);
-        console.log(
-            "SEGUNDOS RESTANTES AL RECIBIR:",
-            Math.ceil((Date.parse(datos.expires_at) - Date.now()) / 1000)
-        );
-
-        console.log("HORA DEL NAVEGADOR:", new Date().toISOString());
-        console.log("VENCIMIENTO RECIBIDO:", datos.expires_at);
-        console.log(
-            "DIFERENCIA EN SEGUNDOS:",
-            (Date.parse(datos.expires_at) - Date.now()) / 1000
-        );
+        
 
         if (!respuesta.ok || !datos.ok) {
 
