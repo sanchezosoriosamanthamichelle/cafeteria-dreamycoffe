@@ -586,6 +586,17 @@ def api_reservaciones():
                     }
                 ]
             })
+            print("========== CONSULTA DE RESERVACIÓN ==========")
+            print("Hora UTC de consulta:", ahora)
+            print("Mesa:", mesa["numero"])
+            print("Horario:", horario["inicio"])
+            if reservacion:
+                print("Estado encontrado:", reservacion["estado"])
+                print("Expira:", reservacion.get("expires_at"))
+                print("Cliente:", reservacion.get("cliente_id"))
+            else:
+                print("RESULTADO: NO SE ENCONTRÓ RESERVACIÓN")
+                print("=============================================")
 
             # Estado inicial
             estado = "Disponible"
