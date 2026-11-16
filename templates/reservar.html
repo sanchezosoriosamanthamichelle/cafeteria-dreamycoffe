@@ -230,6 +230,7 @@ let fechaDatosMesas = "";
 let temporizadorActualizacion = null;
 let actualizacionEnProceso = false;
 let actualizacionPendiente = false;
+let versionReservas = 0;
 
 const vencimientosLocales = new Map();
 const vencimientosEnGracia = new Set();
@@ -308,17 +309,14 @@ function formatoTiempo(segundos) {
            String(segundosRestantes).padStart(2, "0");
 }
 
-
 function obtenerVencimientoLocal(horario) {
 
     if (!vencimientosLocales.has(horario.id)) {
 
-        let vencimiento = Number(horario.expires_at_timestamp);
+        const segundos = Number(horario.segundos_restantes);
 
-        // Alternativa si no viene el timestamp numérico
-        if (!Number.isFinite(vencimiento)) {
-            vencimiento = Date.parse(horario.expires_at);
-        }
+        const vencimiento = Date.now() +
+            Math.max(0, segundos) * 1000;
 
         vencimientosLocales.set(
             horario.id,
@@ -328,7 +326,6 @@ function obtenerVencimientoLocal(horario) {
 
     return vencimientosLocales.get(horario.id);
 }
-
 
 // --------------------------------------------------
 // ACTUALIZAR CONTADORES
@@ -402,7 +399,9 @@ async function cargarMesas() {
         );
 
     actualizacionEnProceso = true;
-
+    
+    const versionConsulta = versionReservas;
+    
     try {
 
         const respuesta = await fetch(
@@ -421,6 +420,11 @@ async function cargarMesas() {
                 datos.error ||
                 "No se pudo consultar la disponibilidad."
             );
+        }
+        // Ignorar consultas anteriores a un cambio de reservación
+        if (versionConsulta !== versionReservas) {
+            actualizacionPendiente = true;
+            return;
         }
 
         // Detectar si un apartado propio acaba de expirar
@@ -850,6 +854,8 @@ async function crearApartado(mesa, horario, boton) {
                 "No se pudo apartar la mesa."
             );
         }
+        
+        versionReservas++;
 
         mostrarMensaje(
     "Tu mesa está apartada. Tienes 60 segundos para confirmar.",
@@ -867,7 +873,9 @@ const horarioActual = mesaActual?.horarios.find(
 
 if (horarioActual && datos.expires_at) {
 
-    const vencimiento = Date.parse(datos.expires_at);
+    const segundos = Number(datos.segundos_restantes);
+    const vencimiento = Date.now() +
+    Math.max(0, segundos) * 1000;
 
     Object.assign(horarioActual, {
         estado: "En proceso",
