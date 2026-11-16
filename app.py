@@ -788,7 +788,16 @@ def crear_reservacion():
         }
 
         resultado = reservaciones.insert_one(nueva_reservacion)
-    
+        print("========== PRUEBA DE RESERVACIÓN ==========")
+        print("Hora UTC:", ahora_utc)
+        print("Fecha de expiración:", nueva_reservacion["expires_at"])
+        print("ID:", resultado.inserted_id)
+        reserva_guardada = reservaciones.find_one({
+            "_id": resultado.inserted_id
+        })
+        print("Fecha guardada en MongoDB:", reserva_guardada["expires_at"])
+        print("===========================================")
+        
         nueva_reservacion["_id"] = resultado.inserted_id
 
     finally:
