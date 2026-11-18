@@ -1790,7 +1790,7 @@ h4 {
     min-width: 0;
     padding: 32px;
     max-width: 1800px;
-    background: #492B30;
+    background: #f8e9ea;
     margin: 0 auto;
 }
 /* =========================================
@@ -1926,11 +1926,11 @@ h4 {
     font-family: Georgia, "Times New Roman", serif;
     font-size: clamp(26px, 2.5vw, 35px);
     font-weight: 500;
-    color: #deb0c1;
+    color: #d187a2;
 }
 .admin-header p {
     margin: 0;
-    color: #cdb7bc;
+    color: #908789;
     font-size: 14px;
 }
 .header-actions {
@@ -1980,9 +1980,8 @@ h4 {
 }
 
 .btn-logout:hover {
-    background: #491126;
-    border-color: #31121a;
-    color: #f8eff2;
+    background: #edcfd3;
+    color: #7d3d52;
 }
 .btn-cancel {
     padding: 10px 15px;
@@ -3247,13 +3246,6 @@ background-attachment: fixed;
 
 
 
-
-
-
-
-
-
-
 /* NAVEGACIÓN DEL ADMINISTRADOR */
 .admin-tabs {
     display: flex;
@@ -3261,7 +3253,7 @@ background-attachment: fixed;
     gap: 10px;
     margin: 25px 0;
     padding: 10px;
-    background: #f8eee9;
+    background: #f2dfd6;
     border-radius: 14px;
 }
 
@@ -3277,11 +3269,11 @@ background-attachment: fixed;
 }
 
 .admin-tab:hover {
-    background: #e6d0c7;
+    background: #e7cabe;
 }
 
 .admin-tab.active {
-    background: #492b30;
+    background: #b17b82;
     color: #fffaf6;
 }
 
